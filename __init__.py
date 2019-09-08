@@ -21,7 +21,7 @@ bl_info = {
     "author": "Elreenys",
     "description": "Tools to create array of objects",
     "blender": (2, 80, 0),
-    "version": (1, 1, 1),
+    "version": (1, 1, 2),
     "location": "View3D > sidebar > array tools tab",
     "category": "Object"
 }
@@ -42,6 +42,7 @@ classes = (
     at_operators.OBJECT_OT_reset_rot,
     at_panel.UIPANEL_PT_trans,
     at_panel.UIPANEL_PT_options,
+    at_panel.UIPANEL_PT_forms,
     at_interface.AT_props
 )
 

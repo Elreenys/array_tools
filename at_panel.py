@@ -1,6 +1,7 @@
 from bpy.types import Panel
 from mathutils import Vector
 
+
 # ---------------------------- Panel ---------------------------
 class UIPANEL_PT_def(Panel):
     bl_space_type = "VIEW_3D"
@@ -15,7 +16,6 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
     @classmethod
     def poll(cls, context):
         return (len(context.selected_objects) > 0 and (context.object.mode == 'OBJECT'))
-
 
     def draw(self, context):
         layout = self.layout
@@ -68,8 +68,6 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
             col.prop(my_prop, 'rot_offset')
             col = split.column()
             col.prop(my_prop, 'rot_global')
-
-            
 
             row = layout.row()
             row.scale_y = 1.5
@@ -158,3 +156,18 @@ class UIPANEL_PT_options(UIPANEL_PT_def):
             row.prop(my_prop, 'rot_min')
             row = layout.row()
             row.prop(my_prop, 'rot_max')
+
+
+class UIPANEL_PT_forms(UIPANEL_PT_def):
+    """Panel containing the ellipse form"""
+    bl_parent_id = 'UIPANEL_PT_trans'
+    bl_label = 'Shapes'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        my_prop = context.scene.at_prop
+
+        layout.enabled = my_prop.already_start
+        row = layout.row()
+        row.label(text="Ellipse")

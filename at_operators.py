@@ -7,6 +7,7 @@ from . import cfg
 from . import at_interface
 from . at_calc_func import at_random_fill, fill_rotation
 
+
 class OBJECT_OT_at_start(bpy.types.Operator):
     """Start and init the addon"""
     bl_idname = 'scene.at_op'
@@ -146,7 +147,8 @@ class OBJECT_OT_reset_tr(bpy.types.Operator):
         prop.tr_min[0], prop.tr_min[1], prop.tr_min[2] = 0.0, 0.0, 0.0
         prop.tr_max[0], prop.tr_max[1], prop.tr_max[2] = 0.0, 0.0, 0.0
 
-        # sometimes get != 0 with vector
+        # if operator is used many times
+        # get weird result != 0 with vector
         # prop.tr_max = Vector((0.0, 0.0, 0.0))
         return {'FINISHED'}
 
@@ -173,4 +175,3 @@ class OBJECT_OT_reset_rot(bpy.types.Operator):
         prop.rot_min[0], prop.rot_min[1], prop.rot_min[2] = 0.0, 0.0, 0.0
         prop.rot_max[0], prop.rot_max[1], prop.rot_max[2] = 0.0, 0.0, 0.0
         return{'FINISHED'}
-

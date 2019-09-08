@@ -8,9 +8,10 @@ from . import cfg
 from . import at_panel
 from . import at_operators
 from . at_calc_func import(
-    local_x_axis,
-    local_y_axis,
-    local_z_axis,
+    x_axis,
+    y_axis,
+    z_axis,
+    xyz_axis,
     at_all_in_one,
     rotate_self,
     at_random
@@ -24,7 +25,7 @@ def update_seed(self, context):
         at_random(self.at_seed, cfg.mtx_list, cfg.list_duplicate, self.tr_min, self.tr_max, sc_min,
             sc_max, self.rot_min, self.rot_max, self.at_is_tr, self.at_is_sc, self.at_is_rot, self.sc_all)
     else:
-        vec = Vector((1.0, 1.0, 1.0))
+        vec = xyz_axis()
         tr = self.tr_rand * vec
         sc = self.sc_rand * vec
         rot = self.rot_rand * vec
@@ -74,7 +75,6 @@ class AT_props(PropertyGroup):
         else:
             self.update_global(bpy.context)
 
-
     def at_del_element(self, nb_to_del=-1):
         """Delete copy from scene and from list"""
         if nb_to_del == -1:
@@ -92,7 +92,6 @@ class AT_props(PropertyGroup):
             self.update_offset(bpy.context)
         else:
             self.update_global(bpy.context)
-
 
     def at_del_all(self):
         """Delete all copies and remove objects from lists"""
@@ -190,7 +189,6 @@ class AT_props(PropertyGroup):
         self.is_prog_change = True
         self.sc_max_z = val
 
-
     # ---------------------------------------------------------
     def update_offset(self, context):
         """Update for all offsets"""
@@ -201,23 +199,23 @@ class AT_props(PropertyGroup):
             self.is_tr_off_last = True
             i = 1
 
-            loc_x = local_x_axis(cfg.obj_ref)
-            loc_y = local_y_axis(cfg.obj_ref)
-            loc_z = local_z_axis(cfg.obj_ref)
+            loc_x = x_axis()
+            loc_y = y_axis()
+            loc_z = z_axis()
             localxyz = (loc_x, loc_y, loc_z)
 
             if self.at_pivot is not None:
                 for elem in cfg.list_duplicate:
                     r_off = i * Vector((self.rot_offset))
                     t_off = i * self.tr_offset
-                    s_off = Vector((1.0, 1.0, 1.0)) - (i * (cfg.obj_ref.scale - (self.sc_offset/100)))
+                    s_off = xyz_axis() - (i * (cfg.obj_ref.scale - (self.sc_offset/100)))
                     at_all_in_one(cfg.obj_ref, elem, r_off, localxyz, t_off, s_off, self.at_pivot.location)
                     i += 1
             else:
                 for elem in cfg.list_duplicate:
                     r_off = i * Vector((self.rot_offset))
                     t_off = i * self.tr_offset
-                    s_off = Vector((1.0, 1.0, 1.0)) - (i * (cfg.obj_ref.scale-(self.sc_offset/100)))
+                    s_off = xyz_axis() - (i * (cfg.obj_ref.scale-(self.sc_offset/100)))
                     at_all_in_one(cfg.obj_ref, elem, (0.0, 0.0, 0.0), localxyz, t_off, s_off, cfg.obj_ref.location)
                     rotate_self(elem, r_off, localxyz)
                     i += 1
@@ -228,7 +226,6 @@ class AT_props(PropertyGroup):
 
             cfg.update_matrix(context)
 
-
     def update_global(self, context):
         """Update for all globals"""
         if self.is_prog_change:
@@ -238,9 +235,9 @@ class AT_props(PropertyGroup):
             self.is_tr_off_last = False
             i = 1
             # local axis
-            loc_x = local_x_axis(cfg.obj_ref)
-            loc_y = local_y_axis(cfg.obj_ref)
-            loc_z = local_z_axis(cfg.obj_ref)
+            loc_x = x_axis()
+            loc_y = y_axis()
+            loc_z = z_axis()
 
             localxyz = (loc_x, loc_y, loc_z)
 
@@ -251,7 +248,7 @@ class AT_props(PropertyGroup):
             for elem in cfg.list_duplicate:
                 r_off = i * Vector((rotation_offset))
                 t_off = i * translation_offset
-                s_off = Vector((1.0, 1.0, 1.0)) - (i*scale_offset)
+                s_off = xyz_axis() - (i*scale_offset)
                 if self.at_pivot is not None:
                     at_all_in_one(cfg.obj_ref, elem, r_off, localxyz, t_off, s_off, self.at_pivot.location)
                 else:
@@ -263,7 +260,6 @@ class AT_props(PropertyGroup):
             self.up_ui_rot_offset(rotation_offset)
 
             cfg.update_matrix(context)
-
 
     # ----------------------- is_copy update ------------------
     def up_ui_is_copy(self):
@@ -284,7 +280,6 @@ class AT_props(PropertyGroup):
                 bpy.ops.object.delete({"selected_objects": cfg.list_duplicate})
                 cfg.list_duplicate.clear()
                 self.add_at_element(nb_to_rebuild)
-
 
     # -------------- update min and max ---------------
     # if user enter a max value < min, change min and vice versa
@@ -329,7 +324,6 @@ class AT_props(PropertyGroup):
             elif test:
                 self.up_ui_sc_max_x(self.sc_min_x)
 
-
     def up_sc_min_y(self, context):
         """Update sc_max_y if sc_min_y is higher"""
         if self.is_prog_change:
@@ -350,7 +344,6 @@ class AT_props(PropertyGroup):
                 self.up_ui_sc_max_z(self.sc_max_y)
             elif test:
                 self.up_ui_sc_max_y(self.sc_min_y)
-
 
     def up_sc_min_z(self, context):
         """Update sc_max_z if sc_min_z is higher"""
@@ -373,7 +366,6 @@ class AT_props(PropertyGroup):
             elif test:
                 self.up_ui_sc_max_y(self.sc_min_z)
 
-
     def up_sc_max_x(self, context):
         """Update sc_min_x if sc_max_x is lower"""
         if self.is_prog_change:
@@ -394,7 +386,6 @@ class AT_props(PropertyGroup):
                 self.up_ui_sc_min_z(self.sc_min_x)
             elif test:
                 self.up_ui_sc_min_x(self.sc_max_x)
-
 
     def up_sc_max_y(self, context):
         """Update sc_min_y if sc_max_y is lower"""
@@ -417,7 +408,6 @@ class AT_props(PropertyGroup):
             elif test:
                 self.up_ui_sc_min_y(self.sc_max_y)
 
-
     def up_sc_max_z(self, context):
         """Update sc_min_z if sc_max_z is lower"""
         if self.is_prog_change:
@@ -439,7 +429,6 @@ class AT_props(PropertyGroup):
             elif test:
                 self.up_ui_sc_min_z(self.sc_max_z)
 
-
     def up_rot_min(self, context):
         """Update rot_max if rot_min is higher"""
         if self.is_prog_change:
@@ -450,7 +439,6 @@ class AT_props(PropertyGroup):
                     self.is_prog_change = True
                     self.rot_max[i] = self.rot_min[i]
 
-
     def up_rot_max(self, context):
         """Update rot_min if rot_max is lower"""
         if self.is_prog_change:
@@ -460,7 +448,6 @@ class AT_props(PropertyGroup):
                 if self.rot_min[i] > self.rot_max[i]:
                     self.is_prog_change = True
                     self.rot_min[i] = self.rot_max[i]
-
 
     # ----------------------- reset all properties ------------
     def up_ui_reset(self):
@@ -511,6 +498,7 @@ class AT_props(PropertyGroup):
         unit='LENGTH',
         precision=2,
         step=50,
+        options={'ANIMATABLE'},
         update=update_offset
     )
 
@@ -523,6 +511,7 @@ class AT_props(PropertyGroup):
         unit='LENGTH',
         precision=2,
         step=50,
+        options={'ANIMATABLE'},
         update=update_global
     )
 
@@ -540,6 +529,7 @@ class AT_props(PropertyGroup):
         subtype='XYZ',
         precision=1,
         step=100,
+        options={'ANIMATABLE'},
         update=update_offset
     )
 
@@ -551,6 +541,7 @@ class AT_props(PropertyGroup):
         subtype='XYZ',
         precision=1,
         step=100,
+        options={'ANIMATABLE'},
         update=update_global
     )
 
@@ -562,6 +553,7 @@ class AT_props(PropertyGroup):
         subtype='XYZ',
         unit='ROTATION',
         step=500,  # = 5
+        options={'ANIMATABLE'},
         update=update_offset
     )
 
@@ -573,6 +565,7 @@ class AT_props(PropertyGroup):
         subtype='XYZ',
         unit='ROTATION',
         step=500,  # = 5
+        options={'ANIMATABLE'},
         update=update_global
     )
 
@@ -605,7 +598,7 @@ class AT_props(PropertyGroup):
         default=False
     )
 
-    at_is_rot:bpy.props.BoolProperty(
+    at_is_rot: bpy.props.BoolProperty(
         name="Add rotation",
         description="Add rotation in random?",
         default=False
@@ -705,11 +698,10 @@ class AT_props(PropertyGroup):
         update=up_rot_max
     )
 
-    rot_rand:bpy.props.FloatProperty(
+    rot_rand: bpy.props.FloatProperty(
         name="Rotation",
         description="Random rotation for all axis",
         unit='ROTATION',
         default=0.0,
         update=update_rrot
     )
-

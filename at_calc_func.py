@@ -3,6 +3,7 @@ import random
 
 from mathutils import Matrix, Vector
 
+
 def at_random_fill(min, max):
     first = random.uniform(min, max)
     second = random.uniform(min, max)
@@ -52,19 +53,24 @@ def at_random(seed, ref, elems, mint, maxt, mins, maxs, minr, maxr, btr, bsc, br
         j += 1
 
 
-def local_x_axis(obj):
-    """Get the local x axis of obj"""
-    return Vector((1.0, 0.0, 0.0)) @ obj.matrix_world.inverted()
+def x_axis():
+    """Get the x axis"""
+    return Vector((1.0, 0.0, 0.0))
 
 
-def local_y_axis(obj):
-    """Get the local y axis of obj"""
-    return Vector((0.0, 1.0, 0.0)) @ obj.matrix_world.inverted()
+def y_axis():
+    """Get the y axis"""
+    return Vector((0.0, 1.0, 0.0))
 
 
-def local_z_axis(obj):
-    """Get the local z axis of obj"""
-    return Vector((0.0, 0.0, 1.0)) @ obj.matrix_world.inverted()
+def z_axis():
+    """Get the z axis"""
+    return Vector((0.0, 0.0, 1.0))
+
+
+def xyz_axis():
+    """Get the xyz axis"""
+    return Vector((1.0, 1.0, 1.0))
 
 
 def at_all_in_one(ref, obj, angle, vecxyz, vec_tr, vec_sc, pivot):
