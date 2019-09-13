@@ -42,7 +42,6 @@ classes = (
     at_operators.OBJECT_OT_reset_rot,
     at_panel.UIPANEL_PT_trans,
     at_panel.UIPANEL_PT_options,
-    at_panel.UIPANEL_PT_forms,
     at_interface.AT_props
 )
 
