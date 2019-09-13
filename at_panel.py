@@ -156,18 +156,3 @@ class UIPANEL_PT_options(UIPANEL_PT_def):
             row.prop(my_prop, 'rot_min')
             row = layout.row()
             row.prop(my_prop, 'rot_max')
-
-
-class UIPANEL_PT_forms(UIPANEL_PT_def):
-    """Panel containing the ellipse form"""
-    bl_parent_id = 'UIPANEL_PT_trans'
-    bl_label = 'Shapes'
-    bl_options = {'DEFAULT_CLOSED'}
-
-    def draw(self, context):
-        layout = self.layout
-        my_prop = context.scene.at_prop
-
-        layout.enabled = my_prop.already_start
-        row = layout.row()
-        row.label(text="Ellipse")
