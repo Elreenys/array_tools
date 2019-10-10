@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 # ---------------------------- Operators ------------------------
 import bpy
 import math
 
 from mathutils import Vector
+
 from . import cfg
 from . import at_interface
 from . at_calc_func import at_random_fill, fill_rotation
@@ -15,7 +17,7 @@ class OBJECT_OT_at_start(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return not context.scene.at_prop.already_start
+        return not context.scene.arraytools_prop.already_start
 
     def execute(self, context):
         cfg.init_array_tool(context)
@@ -28,11 +30,12 @@ class OBJECT_OT_at_done(bpy.types.Operator):
     bl_label = "Done !"
 
     def execute(self, context):
-        cfg.list_duplicate.clear()
-        cfg.mtx_list.clear()
-        obj_ref = None
-        context.scene.at_prop.up_ui_reset()
-        context.scene.at_prop.already_start = False
+        cfg.atools_objs.clear()
+        #cfg.at_mtx_list.clear()
+        array_col = bpy.data.collections.get(cfg.col_name)
+        cfg.col_name = "Array_collection"
+        context.scene.arraytools_prop.up_ui_reset()
+        context.scene.arraytools_prop.already_start = False
         return {'FINISHED'}
 
 
@@ -43,10 +46,10 @@ class OBJECT_OT_at_cancel(bpy.types.Operator):
 
     def execute(self, context):
         scn = context.scene
-
-        scn.at_prop.at_del_all()
-        scn.at_prop.up_ui_reset()
-        scn.at_prop.already_start = False
+        scn.arraytools_prop.at_del_all(True)
+        scn.arraytools_prop.up_ui_reset()
+        scn.arraytools_prop.already_start = False
+        cfg.col_name = "Array_collection"
         return {'FINISHED'}
 
 
@@ -56,7 +59,7 @@ class OBJECT_OT_fill_tr(bpy.types.Operator):
     bl_label = "Fill"
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         offset = prop.tr_offset
 
         for i in range(3):
@@ -73,15 +76,16 @@ class OBJECT_OT_fill_sc(bpy.types.Operator):
     bl_label = "Fill"
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         offset = prop.sc_offset
 
-        if (offset[0] and offset[1] and offset[2]) == 100.0:
-            prop.sc_min_x, prop.sc_max_x = at_random_fill(40.0, 100.0)
-            prop.sc_min_y, prop.sc_max_y = at_random_fill(40.0, 100.0)
-            prop.sc_min_z, prop.sc_max_z = at_random_fill(40.0, 100.0)
+        if 100 in [offset[0], offset[1], offset[2]]:
+            prop.sc_min_x, prop.sc_max_x = at_random_fill(40.0, 120.0)
+            prop.sc_min_y, prop.sc_max_y = at_random_fill(40.0, 120.0)
+            prop.sc_min_z, prop.sc_max_z = at_random_fill(40.0, 120.0)
         else:
-            rand = (100 - offset[i]) / 2
+            rand = [(100 - offset[i]) / 2 for i in range(3)]
+            print(rand)
             prop.sc_min_x, prop.sc_max_x = at_random_fill(offset[0]-rand[0], offset[0]+rand[0])
             prop.sc_min_y, prop.sc_max_y = at_random_fill(offset[1]-rand[1], offset[1]+rand[1])
             prop.sc_min_z, prop.sc_max_z = at_random_fill(offset[2]-rand[2], offset[2]+rand[2])
@@ -107,7 +111,7 @@ class OBJECT_OT_x360(bpy.types.Operator):
     bl_label = "360"
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         prop.tr_offset = Vector((0.0, 0.0, 0.0))
         prop.rot_global = Vector((math.pi/180*360, 0.0, 0.0))
         return{'FINISHED'}
@@ -119,7 +123,7 @@ class OBJECT_OT_y360(bpy.types.Operator):
     bl_label = "360"
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         prop.tr_offset = Vector((0.0, 0.0, 0.0))
         prop.rot_global = Vector((0.0, math.pi/180*360, 0.0))
         return{'FINISHED'}
@@ -131,7 +135,7 @@ class OBJECT_OT_z360(bpy.types.Operator):
     bl_label = "360"
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         prop.tr_offset = Vector((0.0, 0.0, 0.0))
         prop.rot_global = Vector((0.0, 0.0, math.pi/180*360))
         return{'FINISHED'}
@@ -143,7 +147,7 @@ class OBJECT_OT_reset_tr(bpy.types.Operator):
     bl_label = 'Reset'
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         prop.tr_min[0], prop.tr_min[1], prop.tr_min[2] = 0.0, 0.0, 0.0
         prop.tr_max[0], prop.tr_max[1], prop.tr_max[2] = 0.0, 0.0, 0.0
 
@@ -159,7 +163,7 @@ class OBJECT_OT_reset_sc(bpy.types.Operator):
     bl_label = 'Reset'
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         prop.sc_min_x, prop.sc_min_y, prop.sc_min_z = 100, 100, 100
         prop.sc_max_x, prop.sc_max_y, prop.sc_max_z = 100, 100, 100
         return{'FINISHED'}
@@ -168,10 +172,48 @@ class OBJECT_OT_reset_sc(bpy.types.Operator):
 class OBJECT_OT_reset_rot(bpy.types.Operator):
     """Reset the settings of random rotation"""
     bl_idname = 'scene.at_reset_rot'
-    bl_label = 'reset'
+    bl_label = 'Reset'
 
     def execute(self, context):
-        prop = context.scene.at_prop
+        prop = context.scene.arraytools_prop
         prop.rot_min[0], prop.rot_min[1], prop.rot_min[2] = 0.0, 0.0, 0.0
         prop.rot_max[0], prop.rot_max[1], prop.rot_max[2] = 0.0, 0.0, 0.0
         return{'FINISHED'}
+
+
+class OBJECT_OT_reset_second(bpy.types.Operator):
+    """Reset the settings of row options"""
+    bl_idname = 'scene.at_reset_second'
+    bl_label = 'Reset'
+
+    def execute(self, context):
+        prop = context.scene.arraytools_prop
+        prop.tr_second = (0,0,0)
+        prop.sc_second = (100,100,100)
+        prop.rot_second = (0,0,0)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_error(bpy.types.Operator):
+    """Draw a message box to display error"""
+    bl_idname = "info.at_error"
+    bl_label = "Message info"
+
+    info: bpy.props.StringProperty(
+        name = "Message",
+        description = "Display a message",
+        default = ''
+    )
+
+    def execute(self, context):
+        self.report({'INFO'}, self.info)
+        print(self.info)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text=self.info)
+        layout.label(text="")

@@ -1,0 +1,51 @@
+# Array tools versions
+1.0.0   First version of Array tools
+
+1.0.1   correction with pep8
+
+1.1.0   add random options
+        add 19 properties
+        add options sub-panel
+
+1.1.1   add quick 360 (add : 3 buttons, 3 operators)
+        add checkbox uniform scale(1 property)
+        add buttons reset (add : 3 buttons, 3 operators)
+        add a collection named 'Array_collection'
+
+1.1.2   correction of math errors
+        rename local_x_axis() to x_axis()
+        rename local_y_axis() to y_axis()
+        rename local_z_axis() to z_axis()
+        add xyz_axis()
+
+1.1.3   add an operator to display error message
+        delete property old_count (not very used)
+        rename add_value to add_count
+        rename del_value to del_count
+        rename at_values to at_count_values
+        rename list_duplicate to atools_objs
+        atools_objs store now objects' name and no more reference to object
+        obj_ref not used anymore, atools_objs[0] store the reference object'name
+        rename at_prop to arraytools_prop
+        rename class AT_props to class ArrayTools_props
+        minor code improvement
+
+1.2.0   add row property (number of row(s))
+        add variation property (variation in each row)
+        add total property (total number of copies)
+        add erow property (number of copies in last row)
+        atools_objs is now a list of lists (list of rows)
+        each session of array tools have his own collection
+        add functions add_in_row() and add_in_column()
+        add functions del_in_row() and del_in_column()
+        add functions update_row() and up_ui_updateRow()
+        add function update_second()
+        add functions calc_global(), transforms_lsr() and apply_transforms()
+        remove functions add_at_element() and at_del_element()
+        remove function rotate_self()
+        remove functions add_matrix(), del_matrix() and update_matrix()
+        add function tsr(), retrieve (translation,scale,rotation) from position in array
+        function update_is_copy() improved
+        function at_del_all() modified
+        functions update_offset() and update_global() modified
+        function at_random() and at_all_in_one() modified

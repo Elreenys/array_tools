@@ -1,5 +1,6 @@
-
+# -*- coding: utf-8 -*-
 import bpy
+import math
 
 from bpy.types import PropertyGroup
 from mathutils import Vector
@@ -13,117 +14,276 @@ from . at_calc_func import(
     z_axis,
     xyz_axis,
     at_all_in_one,
-    rotate_self,
-    at_random
+    at_random,
+    sum_serie,
+    tsr
 )
 
-
-def update_seed(self, context):
-    if self.at_mode == 'ADV':
-        sc_min = (self.sc_min_x, self.sc_min_y, self.sc_min_z)
-        sc_max = (self.sc_max_x, self.sc_max_y, self.sc_max_z)
-        at_random(self.at_seed, cfg.mtx_list, cfg.list_duplicate, self.tr_min, self.tr_max, sc_min,
-            sc_max, self.rot_min, self.rot_max, self.at_is_tr, self.at_is_sc, self.at_is_rot, self.sc_all)
-    else:
-        vec = xyz_axis()
-        tr = self.tr_rand * vec
-        sc = self.sc_rand * vec
-        rot = self.rot_rand * vec
-        at_random(self.at_seed, cfg.mtx_list, cfg.list_duplicate, -tr, tr, sc, 100*vec, -rot, rot,
-            self.at_is_tr, self.at_is_sc, self.at_is_rot, False)
+"""not used yet
+if check on update, may really slow the addon """
+def check_list(alist):
+    """check all the objects"""
+    for elem in alist:
+        if elem in bpy.data.objects:
+            pass
+        else:
+            cfg.display_error(str(elem)+" isn't valid.")
+            print("Check_list : a name isn't valid ", elem)
+            return False
+    return True
 
 
-def update_rtr(self, context):
-    self.tr_max = self.tr_rand * Vector((1.0, 1.0, 1.0))
-    self.tr_min = self.tr_rand * Vector((-1.0, -1.0, -1.0))
-
-
-def update_rsc(self, context):
-    self.sc_max_x, self.sc_max_y, self.sc_max_z = (100.0, 100.0, 100.0)
-    rand = self.sc_rand
-    self.sc_min_x, self.sc_min_y, self.sc_min_z = rand, rand, rand
-
-
-def update_rrot(self, context):
-    self.rot_max = self.rot_rand * Vector((1.0, 1.0, 1.0))
-    self.rot_min = self.rot_rand * Vector((-1.0, -1.0, -1.0))
+def elem_in_row(column, row, indice):
+    """Number of elements in a row"""
+    elements = column + (row - 1) * indice
+    # print("row elements =", elements)
+    return elements
 
 
 # ---------------------------- Properties ----------------------
-class AT_props(PropertyGroup):
-    """Property for array tools"""
+class ArrayTools_props(PropertyGroup):
+    """Properties for array tools"""
 
-    def add_at_element(self, nb_to_add=-1):
-        """Add nb_to_add copy in the scene"""
-        if nb_to_add == -1:
-            nb_to_add = cfg.at_values[1] - cfg.at_values[0]
-        obj = cfg.obj_ref
-        print(f"add {nb_to_add} element(s) ")
-        for i in range(nb_to_add):
-            objcp = obj.copy()
-            array_col = bpy.data.collections.get("Array_collection")
-            array_col.objects.link(objcp)
-            if self.is_copy:
-                objcp.data = obj.data.copy()
+    def add_in_column(self, row, nb_column=-1):
+        """Add nb_column element(s) in each row"""
+        column = cfg.at_count_values[0]
+        if nb_column == -1:
+            nb_column = cfg.at_count_values[1] - column
 
-            cfg.list_duplicate.append(objcp)
+        ref_name = cfg.atools_objs[0][0]
 
-        cfg.add_matrix(nb_to_add, cfg.list_duplicate)
+        if ref_name in bpy.data.objects:
+            ref_obj = bpy.data.objects[ref_name]
+            # with offset no need to replace all elements, only the last
+            if self.is_tr_off_last:
+                for i in range(row):
+                    for j in range(column, column + nb_column):
+                        objcp = ref_obj.copy()
+                        array_col = bpy.data.collections.get(cfg.col_name)
+                        array_col.objects.link(objcp)
+                        if self.is_copy:
+                            objcp.data = ref_obj.data.copy()
+                        cfg.atools_objs[i].append(objcp.name)
 
-        if self.is_tr_off_last:
-            self.update_offset(bpy.context)
+                        self.transforms_lsr(j, i, cfg.ref_mtx, objcp.name)
+                # update the global ui
+                tr, sc, rot = self.calc_global()
+                self.up_ui_tr_global(tr)
+                self.up_ui_sc_global(sc)
+                self.up_ui_rot_global(rot)
+
+            else: # replace all elements
+                for i in range(row):
+                    for j in range(column, column + nb_column):
+                        objcp = ref_obj.copy()
+                        array_col = bpy.data.collections.get(cfg.col_name)
+                        array_col.objects.link(objcp)
+                        if self.is_copy:
+                            objcp.data = ref_obj.data.copy()
+                        cfg.atools_objs[i].append(objcp.name)
+                self.update_global(bpy.context)
+            del objcp
+            del ref_obj
+            # print("in add col", cfg.atools_objs)
         else:
+            message = "Problem with reference object's name."
+            cfg.display_error(message)
+            print("Error in 'add_in_column' : ", message)
+
+
+    def del_in_column(self, row, nb_column=-1):
+        """Remove nb_column element(s) in each row"""
+        if nb_column == -1:
+            nb_column = cfg.at_count_values[0] - cfg.at_count_values[1]
+        array_col = bpy.data.collections.get(cfg.col_name)
+        for i in range(row):
+            for j in range(nb_column):
+                del_name = cfg.atools_objs[i].pop()
+                if del_name in bpy.data.objects:
+                    obj = bpy.data.objects[del_name]
+                    array_col.objects.unlink(obj)
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                else:
+                    cfg.display_error(del_name + " doesn't exist anymore.")
+                    print("Error in 'del_in_column' : ", del_name)
+        if not self.is_tr_off_last:
+            # if global is used last
             self.update_global(bpy.context)
-
-    def at_del_element(self, nb_to_del=-1):
-        """Delete copy from scene and from list"""
-        if nb_to_del == -1:
-            nb_to_del = cfg.at_values[0] - cfg.at_values[1]
-        print(f"del {nb_to_del} element(s)")
-        for i in range(nb_to_del):
-            obj = cfg.list_duplicate.pop()
-            array_col = bpy.data.collections.get("Array_collection")
-            array_col.objects.unlink(obj)
-            bpy.data.objects.remove(obj, do_unlink=True)
-
-        cfg.del_matrix(nb_to_del)
-
-        if self.is_tr_off_last:
-            self.update_offset(bpy.context)
         else:
-            self.update_global(bpy.context)
+            tr, sc, rot = self.calc_global()
+            self.up_ui_tr_global(tr)
+            self.up_ui_sc_global(sc)
+            self.up_ui_rot_global(rot)
 
-    def at_del_all(self):
-        """Delete all copies and remove objects from lists"""
-        bpy.ops.object.delete({"selected_objects": cfg.list_duplicate})
-        cfg.list_duplicate.clear()
-        cfg.mtx_list.clear()
-        cfg.obj_ref = None
+
+    def add_in_row(self, column, nb_row=-1):
+        """Add column elements in nb_row new row(s)"""
+        row = cfg.at_row_values[0]
+        if nb_row == -1:
+            nb_row = cfg.at_row_values[1] - row
+
+        ref_name = cfg.atools_objs[0][0]
+        if ref_name in bpy.data.objects:
+            ref_obj = bpy.data.objects[ref_name]
+            if self.is_tr_off_last:
+                for i in range(row, row + nb_row):
+                    cfg.atools_objs.append([])
+                    for j in range(column):
+                        objcp = ref_obj.copy()
+                        array_col = bpy.data.collections.get(cfg.col_name)
+                        array_col.objects.link(objcp)
+                        if self.is_copy:
+                            objcp.data = ref_obj.data.copy()
+                        cfg.atools_objs[i].append(objcp.name)
+                        self.transforms_lsr(j, i, cfg.ref_mtx, objcp.name)
+            else:
+                for i in range(row, row + nb_row):
+                    cfg.atools_objs.append([])
+                    for j in range(column):
+                        objcp = ref_obj.copy()
+                        array_col = bpy.data.collections.get(cfg.col_name)
+                        array_col.objects.link(objcp)
+                        if self.is_copy:
+                            objcp.data = ref_obj.data.copy()
+                        cfg.atools_objs[i].append(objcp.name)
+                self.update_global(bpy.context)
+            # print("in add row", cfg.atools_objs)
+        else:
+            message = "Problem with reference object's name."
+            cfg.display_error(message)
+            print("Error in 'add in row' : ", message)
+
+
+    def del_in_row(self, nb_row=-1):
+        """Remove nb_row row(s) : (column * nb_row) elements"""
+        if nb_row == -1:
+            nb_row = cfg.at_row_values[0] - cfg.at_row_values[1]
+        array_col = bpy.data.collections.get(cfg.col_name)
+        for i in range(nb_row):
+            names = cfg.atools_objs.pop()
+            for del_name in names:
+                if del_name in bpy.data.objects:
+                    obj = bpy.data.objects[del_name]
+                    array_col.objects.unlink(obj)
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                else:
+                    cfg.display_error(del_name + " doesn't exist anymore.")
+                    print("Error in 'del_in_column' : ", del_name)
+
+
+    def at_del_all(self, del_rall):
+        """Delete all copies and remove objects from lists
+        del_rall : boolean, True to del reference object from list
+        """
+        array_col = bpy.data.collections.get(cfg.col_name)
+        ref_name = cfg.atools_objs[0][0]
+        for i in range(self.row):
+            names = cfg.atools_objs.pop()
+            for obj_name in reversed(names):
+                if obj_name == ref_name:
+                    continue
+                # test if object exist
+                if obj_name in bpy.data.objects:
+                    obj = bpy.data.objects[obj_name]
+                    array_col.objects.unlink(obj)
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                else:
+                    cfg.display_error(obj_name + " not exist!")
+                    print("Error in 'del_all' : ", obj_name)
+
+        if del_rall:
+            cfg.atools_objs.clear()
+
+            # removing the collection if empty
+            if not array_col.objects:
+                bpy.data.collections.remove(array_col)
+        else:
+            cfg.atools_objs.append([ref_name])
         print("Del_all done!")
 
     # ----------------------- UI update ----------------------
     # --------------------------------------------------------
     # ----------------------- count update -------------------
     def updateCount(self, context):
-        """update the number of element(s)"""
+        """update the number of element(s) in column"""
         if self.is_prog_change:
             self.is_prog_change = False
         else:
-            cfg.add_value(int(self.count))
-            cfg.del_value()
+            cfg.add_count(int(self.count))
+            cfg.del_count()
 
-            # cfg.at_values[0] always get old count
-            self.old_count = cfg.at_values[0]
+            # cfg.count_values[0] always store old count value
+            difference = self.count - cfg.at_count_values[0]
 
-            if self.old_count < self.count:
-                self.add_at_element()
-            elif self.old_count > self.count:
-                self.at_del_element()
+            self.update_infos()
+
+            if difference > 0:
+                # self.add_at_element()
+                self.add_in_column(self.row, difference)
+            elif difference < 0:
+                # self.at_del_element()
+                self.del_in_column(self.row, -difference)
+        # print("objs =", cfg.atools_objs)
+
 
     def up_ui_updateCount(self, val):
         """Update the value of the property count in UI"""
         self.is_prog_change = True
         self.count = val
+
+    # ----------------------- row update ---------------------
+    def update_row(self, context):
+        """Update row property"""
+        if self.is_prog_change:
+            self.is_prog_change = False
+        else:
+            cfg.add_row(self.row)
+            cfg.del_row()
+
+            # cfg.at_row_values[0] always store old row value
+            difference = self.row - cfg.at_row_values[0]
+            if difference > 0:
+                self.add_in_row(self.count, difference)
+            elif difference < 0:
+                self.del_in_row(-difference)
+
+            line = elem_in_row(self.count, self.row, self.alter)
+
+            self.update_infos()
+
+    def up_ui_updateRow(self, val):
+        """Update the value of the property row in UI"""
+        self.is_prog_change = True
+        self.row = val
+
+    # next release
+    def update_alter(self, context):
+        """Update alter property"""
+        if self.is_prog_change:
+            self.is_prog_change = False
+        else:
+            cfg.add_alter(self.alter)
+            cfg.del_alter()
+
+            print(f"count={self.count}, row={self.row}, alter={self.alter}")
+            line = elem_in_row(self.count, self.row, self.alter)
+            print("alter line =", line)
+
+            self.update_infos()
+
+    # next release
+    def up_ui_updateAlter(self, val):
+        """Update the value of the property alter in UI"""
+        self.is_prog_change = True
+        self.alter = val
+
+
+    def update_infos(self):
+        """Update properties total and erow"""
+        sum = sum_serie(self.row, self.alter)
+        square = self.count * self.row
+        self.total = str(int(square + sum))
+        self.erow = str(elem_in_row(self.count, self.row, self.alter))
 
     # ----------------------- translation update --------------
     def up_ui_tr_offset(self, val):
@@ -149,8 +309,7 @@ class AT_props(PropertyGroup):
 
     # ----------------------- rotation update -----------------
     def up_ui_rot_offset(self, val):
-        """Update the value of the property rot_offset in UI
-            val is a float """
+        """Update the value of the property rot_offset in UI"""
         self.is_prog_change = True
         self.rot_offset = val
 
@@ -159,107 +318,128 @@ class AT_props(PropertyGroup):
         self.is_prog_change = True
         self.rot_global = val
 
-    def up_ui_sc_min_x(self, val):
-        """Update the value of the property sc_min_x in UI"""
-        self.is_prog_change = True
-        self.sc_min_x = val
+    # -------------------------------------------------------
+    def calc_global(self):
+        """Calculate the column global"""
+        tg = (self.count-1) * self.tr_offset
+        sg = (xyz_axis() - (self.count-1) *
+            (cfg.ref_mtx.to_scale() - (self.sc_offset/100))) * 100
+        rg = self.count * Vector(self.rot_offset)
+        return tg,sg,rg
 
-    def up_ui_sc_min_y(self, val):
-        """Update the value of the property sc_min_y in UI"""
-        self.is_prog_change = True
-        self.sc_min_y = val
 
-    def up_ui_sc_min_z(self, val):
-        """Update the value of the property sc_min_z in UI"""
-        self.is_prog_change = True
-        self.sc_min_z = val
+    def transforms_lsr(self, column, row, mat, ename):
+        """Calculate transforms according to the position of the element
+        column : indice of the element's column
+        row : indice of the element's row
+        mat : matrix of the reference object
+        ename : element's name to put in place
+        """
+        localxyz = (x_axis(), y_axis(), z_axis())
 
-    def up_ui_sc_max_x(self, val):
-        """Update the value of the property sc_max_x in UI"""
-        self.is_prog_change = True
-        self.sc_max_x = val
+        translate, scaling, rotate = tsr(mat, column, row, self.tr_offset, self.tr_second,
+            self.sc_offset, self.sc_second, self.rot_offset, self.rot_second)
 
-    def up_ui_sc_max_y(self, val):
-        """Update the value of the property sc_max_y in UI"""
-        self.is_prog_change = True
-        self.sc_max_y = val
+        if ename in bpy.data.objects:
+            obj = bpy.data.objects[ename]
+        if self.at_pivot is not None:
+            obj.matrix_world = at_all_in_one(mat, rotate, localxyz, translate,
+                scaling, self.at_pivot.location)
+        else:
+            obj.matrix_world = at_all_in_one(mat, rotate, localxyz, translate,
+                scaling, mat.translation)
 
-    def up_ui_sc_max_z(self, val):
-        """Update the value of the property sc_max_z in UI"""
-        self.is_prog_change = True
-        self.sc_max_z = val
 
-    # ---------------------------------------------------------
+    def apply_transforms(self, col_start, col_end, row_start, row_end, tr, sc, rot):
+        """Move, scale and rotate the selected elements
+        tr : translation offset of the first row
+        sc : scale offset of the first row
+        rot : rotation offset of the first row
+        return global transforms
+        """
+        # local axis always (1,0,0) (0,1,0) (0,0,1)
+        localxyz = (x_axis(), y_axis(), z_axis())
+
+        ref_scale = cfg.ref_mtx.to_scale()
+
+        # duplicate code but avoid looping the test
+        if self.at_pivot is not None:
+            for i in range(row_start, row_end):
+                for j in range(col_start, col_end):
+                    elem = cfg.atools_objs[i][j]
+                    if elem in bpy.data.objects:
+                        obj = bpy.data.objects[elem]
+                    else:
+                        cfg.display_error(elem + " no more exist !")
+                        print("Error in 'apply_transforms', name no more exist : ", elem)
+                        continue
+                    t_off, s_off, r_off = tsr(cfg.ref_mtx, j, i, tr, self.tr_second, sc,
+                        self.sc_second, rot, self.rot_second)
+
+                    obj.matrix_world = at_all_in_one(cfg.ref_mtx, r_off,
+                        localxyz, t_off, s_off, self.at_pivot.location)
+        else:
+            for i in range(row_start, row_end):
+                for j in range(col_start, col_end):
+                    ref_loc = cfg.ref_mtx.translation
+                    elem = cfg.atools_objs[i][j]
+                    if elem in bpy.data.objects:
+                        obj = bpy.data.objects[elem]
+                    else:
+                        cfg.display_error(elem + " no more exist !")
+                        print("Error in 'apply_transforms', name no more exist : ", elem)
+                        continue
+                    t_off, s_off, r_off = tsr(cfg.ref_mtx, j, i, tr, self.tr_second, sc,
+                        self.sc_second, rot, self.rot_second)
+
+                    obj.matrix_world = at_all_in_one(cfg.ref_mtx, r_off,
+                        localxyz, t_off, s_off, ref_loc)
+        tr_col,sc_col,rot_col = self.calc_global()
+        return(tr_col, sc_col, rot_col)
+
     def update_offset(self, context):
         """Update for all offsets"""
         if self.is_prog_change:
             self.is_prog_change = False
-        else:
-            # user change offset
+        else: # user change offset
             self.is_tr_off_last = True
-            i = 1
 
-            loc_x = x_axis()
-            loc_y = y_axis()
-            loc_z = z_axis()
-            localxyz = (loc_x, loc_y, loc_z)
+            aloc, asc, arot = self.apply_transforms(0, self.count, 0, self.row,
+                self.tr_offset, self.sc_offset, Vector(self.rot_offset))
 
-            if self.at_pivot is not None:
-                for elem in cfg.list_duplicate:
-                    r_off = i * Vector((self.rot_offset))
-                    t_off = i * self.tr_offset
-                    s_off = xyz_axis() - (i * (cfg.obj_ref.scale - (self.sc_offset/100)))
-                    at_all_in_one(cfg.obj_ref, elem, r_off, localxyz, t_off, s_off, self.at_pivot.location)
-                    i += 1
-            else:
-                for elem in cfg.list_duplicate:
-                    r_off = i * Vector((self.rot_offset))
-                    t_off = i * self.tr_offset
-                    s_off = xyz_axis() - (i * (cfg.obj_ref.scale-(self.sc_offset/100)))
-                    at_all_in_one(cfg.obj_ref, elem, (0.0, 0.0, 0.0), localxyz, t_off, s_off, cfg.obj_ref.location)
-                    rotate_self(elem, r_off, localxyz)
-                    i += 1
-            self.up_ui_tr_global(t_off)
-            self.up_ui_sc_global(s_off * 100)
-            # global rotation need to include reference object
-            self.up_ui_rot_global(r_off + Vector((self.rot_offset)))
+            # since offset changes, global too
+            self.up_ui_tr_global(aloc)
+            self.up_ui_sc_global(asc)
+            self.up_ui_rot_global(arot)
 
-            cfg.update_matrix(context)
 
     def update_global(self, context):
         """Update for all globals"""
         if self.is_prog_change:
             self.is_prog_change = False
-        else:
-            # user change global
+        else: # user change global
             self.is_tr_off_last = False
-            i = 1
-            # local axis
-            loc_x = x_axis()
-            loc_y = y_axis()
-            loc_z = z_axis()
 
-            localxyz = (loc_x, loc_y, loc_z)
+            ref_scale = cfg.ref_mtx.to_scale()
 
             translation_offset = Vector(self.tr_global) / (self.count - 1)
-            scale_offset = (cfg.obj_ref.scale-(self.sc_global/100)) / (self.count - 1)
-            rotation_offset = Vector((self.rot_global)) / self.count
+            scale_offset = ref_scale - ((ref_scale-(self.sc_global/100)) / (self.count - 1))
+            rotation_offset = Vector(self.rot_global) / self.count
 
-            for elem in cfg.list_duplicate:
-                r_off = i * Vector((rotation_offset))
-                t_off = i * translation_offset
-                s_off = xyz_axis() - (i*scale_offset)
-                if self.at_pivot is not None:
-                    at_all_in_one(cfg.obj_ref, elem, r_off, localxyz, t_off, s_off, self.at_pivot.location)
-                else:
-                    at_all_in_one(cfg.obj_ref, elem, (0.0, 0.0, 0.0), localxyz, t_off, s_off, cfg.obj_ref.location)
-                    rotate_self(elem, r_off, localxyz)
-                i += 1
+            self.apply_transforms(0, self.count, 0, self.row, translation_offset,
+                Vector(scale_offset)*100, rotation_offset)
+
+            # since global changes, offset too
             self.up_ui_tr_offset(translation_offset)
-            self.up_ui_sc_offset(Vector((100.0, 100.0, 100.0)) - (scale_offset*100))
+            self.up_ui_sc_offset(Vector(scale_offset*100))
             self.up_ui_rot_offset(rotation_offset)
 
-            cfg.update_matrix(context)
+
+    def update_second(self, context):
+        """Update the secondary transforms"""
+        self.apply_transforms(0, self.count, 0, self.row, self.tr_offset,
+            self.sc_offset, self.rot_offset)
+
 
     # ----------------------- is_copy update ------------------
     def up_ui_is_copy(self):
@@ -267,19 +447,127 @@ class AT_props(PropertyGroup):
         self.is_prog_change = True
         self.is_copy = False
 
+
     def update_is_copy(self, context):
         """Allow a copy or duplicate(copy link by default)"""
         if self.is_prog_change:
             self.is_prog_change = False
         else:
             if self.is_copy:  # no need to rebuild all
-                for elem in cfg.list_duplicate:
-                    elem.data = cfg.obj_ref.data.copy()
-            else:  # since the value change (now duplicate) copies can't become duplicates, so need to rebuild
-                nb_to_rebuild = len(cfg.list_duplicate)
-                bpy.ops.object.delete({"selected_objects": cfg.list_duplicate})
-                cfg.list_duplicate.clear()
-                self.add_at_element(nb_to_rebuild)
+                for i in range(self.row):
+                    for j in range(self.count):
+                        if i == 0 and j == 0:
+                            continue
+                        ref_name = cfg.atools_objs[0][0]
+                        elem_name = cfg.atools_objs[i][j]
+                        bpy.data.objects[elem_name].data = bpy.data.objects[ref_name].data.copy()
+            else:  # since the value change (now duplicate), need to rebuild
+                count = self.count
+                row = self.row
+                ref_name = cfg.atools_objs[0][0]
+                array_col = bpy.data.collections.get(cfg.col_name)
+
+                # DO NOT USE BLENDER CRASH WITH IT
+                # self.at_del_all(False)
+
+                bpy.ops.object.delete({"selected_objects": array_col.objects})
+                cfg.atools_objs.clear()
+                cfg.atools_objs.append([ref_name])
+
+                ref_obj = bpy.data.objects[ref_name]
+                for i in range(row):
+                    if i != 0:
+                        cfg.atools_objs.append([])
+                    for j in range(count):
+                        objcp = ref_obj.copy()
+                        array_col.objects.link(objcp)
+                        cfg.atools_objs[i].append(objcp.name)
+                del objcp
+                del ref_obj
+
+                if self.is_tr_off_last:
+                    self.update_offset(bpy.context)
+                else:
+                    self.update_global(bpy.context)
+
+                print("Rebuild done!")
+
+    # ----------------------- random part -----------------
+    # -----------------------------------------------------
+    def update_seed(self, context):
+        if self.at_mode == 'ADV':
+            sc_min = (self.sc_min_x, self.sc_min_y, self.sc_min_z)
+            sc_max = (self.sc_max_x, self.sc_max_y, self.sc_max_z)
+            at_random(self.at_seed, self.count, self.row, self.tr_min, self.tr_max, sc_min,
+                sc_max, self.rot_min, self.rot_max, self.at_is_tr, self.at_is_sc, self.at_is_rot,
+                self.sc_all, self.tr_offset, self.tr_second, self.sc_offset, self.sc_second,
+                self.rot_offset, self.rot_second, self.at_pivot)
+        else: # simple mode
+            vec = xyz_axis()
+            tr = self.tr_rand * vec
+            sc = self.sc_rand * vec
+            rot = self.rot_rand * vec
+            at_random(self.at_seed, self.count, self.row, -tr, tr, sc, 100*vec, -rot, rot,
+                self.at_is_tr, self.at_is_sc, self.at_is_rot, False, self.tr_offset,
+                self.tr_second, self.sc_offset, self.sc_second, self.rot_offset,
+                self.rot_second, self.at_pivot)
+
+
+    def update_rtr(self, context):
+        """rtr in simple mode update adv mode"""
+        self.tr_max = self.tr_rand * Vector((1.0, 1.0, 1.0))
+        self.tr_min = self.tr_rand * Vector((-1.0, -1.0, -1.0))
+
+
+    def update_rsc(self, context):
+        """rsc in simple mode update adv mode"""
+        self.sc_max_x, self.sc_max_y, self.sc_max_z = (100.0, 100.0, 100.0)
+        rand = self.sc_rand
+        self.sc_min_x = rand
+        self.sc_min_y = rand
+        self.sc_min_z = rand
+
+
+    def update_rrot(self, context):
+        """rrot in simple mode update adv mode"""
+        self.rot_max = self.rot_rand * Vector((1.0, 1.0, 1.0))
+        self.rot_min = self.rot_rand * Vector((-1.0, -1.0, -1.0))
+
+
+    def up_ui_sc_min_x(self, val):
+        """Update the value of the property sc_min_x in UI"""
+        self.is_prog_change = True
+        self.sc_min_x = val
+
+
+    def up_ui_sc_min_y(self, val):
+        """Update the value of the property sc_min_y in UI"""
+        self.is_prog_change = True
+        self.sc_min_y = val
+
+
+    def up_ui_sc_min_z(self, val):
+        """Update the value of the property sc_min_z in UI"""
+        self.is_prog_change = True
+        self.sc_min_z = val
+
+
+    def up_ui_sc_max_x(self, val):
+        """Update the value of the property sc_max_x in UI"""
+        self.is_prog_change = True
+        self.sc_max_x = val
+
+
+    def up_ui_sc_max_y(self, val):
+        """Update the value of the property sc_max_y in UI"""
+        self.is_prog_change = True
+        self.sc_max_y = val
+
+
+    def up_ui_sc_max_z(self, val):
+        """Update the value of the property sc_max_z in UI"""
+        self.is_prog_change = True
+        self.sc_max_z = val
 
     # -------------- update min and max ---------------
     # if user enter a max value < min, change min and vice versa
@@ -293,6 +581,7 @@ class AT_props(PropertyGroup):
                     self.is_prog_change = True
                     self.tr_max[i] = self.tr_min[i]
 
+
     def up_tr_max(self, context):
         """Update tr_min if tr_max is lower"""
         if self.is_prog_change:
@@ -303,6 +592,7 @@ class AT_props(PropertyGroup):
                     self.is_prog_change = True
                     self.tr_min[i] = self.tr_max[i]
 
+
     def up_sc_min_x(self, context):
         """Update sc_max_x if sc_min_x is higher"""
         if self.is_prog_change:
@@ -310,18 +600,21 @@ class AT_props(PropertyGroup):
         else:
             test = self.sc_min_x > self.sc_max_x
             if test and self.sc_all:
+                # case : min > max and uniform = True
                 self.up_ui_sc_max_x(self.sc_min_x)
-                # with uniform : min_x = min_y = min_z same for max
+                # with uniform : min_x = min_y = min_z same for max_
                 self.up_ui_sc_min_y(self.sc_min_x)
                 self.up_ui_sc_min_z(self.sc_min_x)
                 self.up_ui_sc_max_y(self.sc_min_x)
                 self.up_ui_sc_max_z(self.sc_min_x)
             elif self.sc_all:
+                # case : min < max and uniform = True
                 self.up_ui_sc_min_y(self.sc_min_x)
                 self.up_ui_sc_min_z(self.sc_min_x)
                 self.up_ui_sc_max_y(self.sc_max_x)
                 self.up_ui_sc_max_z(self.sc_max_x)
             elif test:
+                # case : min > max and uniform = False
                 self.up_ui_sc_max_x(self.sc_min_x)
 
     def up_sc_min_y(self, context):
@@ -331,18 +624,21 @@ class AT_props(PropertyGroup):
         else:
             test = self.sc_min_y > self.sc_max_y
             if test and self.sc_all:
+                # case : min > max and uniform = True
                 self.up_ui_sc_max_y(self.sc_min_y)
-                # with uniform : min_x = min_y = min_z same for max
+                # with uniform : min_x = min_y = min_z same for max_
                 self.up_ui_sc_min_x(self.sc_min_y)
                 self.up_ui_sc_min_z(self.sc_min_y)
                 self.up_ui_sc_max_x(self.sc_min_y)
                 self.up_ui_sc_max_y(self.sc_min_y)
             elif self.sc_all:
+                # case : min < max and uniform = True
                 self.up_ui_sc_min_x(self.sc_min_y)
                 self.up_ui_sc_min_z(self.sc_min_y)
                 self.up_ui_sc_max_x(self.sc_max_y)
                 self.up_ui_sc_max_z(self.sc_max_y)
             elif test:
+                # case : min > max and uniform = False
                 self.up_ui_sc_max_y(self.sc_min_y)
 
     def up_sc_min_z(self, context):
@@ -352,18 +648,21 @@ class AT_props(PropertyGroup):
         else:
             test = self.sc_min_z > self.sc_max_z
             if test and self.sc_all:
+                # case : min > max and uniform = True
                 self.up_ui_sc_max_z(self.sc_min_z)
-                # with uniform : min_x = min_y = min_z same for max
+                # with uniform : min_x = min_y = min_z same for max_
                 self.up_ui_sc_min_x(self.sc_min_z)
                 self.up_ui_sc_min_y(self.sc_min_z)
                 self.up_ui_sc_max_x(self.sc_min_z)
                 self.up_ui_sc_max_y(self.sc_min_z)
             elif self.sc_all:
+                # case : min < max and uniform = True
                 self.up_ui_sc_min_x(self.sc_min_z)
                 self.up_ui_sc_min_y(self.sc_min_z)
                 self.up_ui_sc_max_x(self.sc_max_z)
                 self.up_ui_sc_max_y(self.sc_max_z)
             elif test:
+                # case : min > max and uniform = False
                 self.up_ui_sc_max_y(self.sc_min_z)
 
     def up_sc_max_x(self, context):
@@ -373,18 +672,21 @@ class AT_props(PropertyGroup):
         else:
             test = self.sc_min_x > self.sc_max_x
             if test and self.sc_all:
+                # case : min > max and uniform = True
                 self.up_ui_sc_min_x(self.sc_max_x)
-                # with uniform : min_x = min_y = min_z same for max
+                # with uniform : min_x = min_y = min_z same for max_
                 self.up_ui_sc_max_y(self.sc_max_x)
                 self.up_ui_sc_max_z(self.sc_max_x)
                 self.up_ui_sc_min_y(self.sc_max_x)
                 self.up_ui_sc_min_z(self.sc_max_x)
             elif self.sc_all:
+                # case : min < max and uniform = True
                 self.up_ui_sc_max_y(self.sc_max_x)
                 self.up_ui_sc_max_z(self.sc_max_x)
                 self.up_ui_sc_min_y(self.sc_min_x)
                 self.up_ui_sc_min_z(self.sc_min_x)
             elif test:
+                # case : min > max and uniform = False
                 self.up_ui_sc_min_x(self.sc_max_x)
 
     def up_sc_max_y(self, context):
@@ -394,18 +696,21 @@ class AT_props(PropertyGroup):
         else:
             test = self.sc_min_y > self.sc_max_y
             if test and self.sc_all:
+                # case : min > max and uniform = True
                 self.up_ui_sc_min_y(self.sc_max_y)
-                # with uniform : min_x = min_y = min_z same for max
+                # with uniform : min_x = min_y = min_z same for max_
                 self.up_ui_sc_max_x(self.sc_max_y)
                 self.up_ui_sc_max_z(self.sc_max_y)
                 self.up_ui_sc_min_x(self.sc_max_y)
                 self.up_ui_sc_min_z(self.sc_max_y)
             elif self.sc_all:
+                # case : min < max and uniform = True
                 self.up_ui_sc_max_x(self.sc_max_y)
                 self.up_ui_sc_max_z(self.sc_max_y)
                 self.up_ui_sc_min_x(self.sc_min_y)
                 self.up_ui_sc_min_z(self.sc_min_y)
             elif test:
+                # case : min > max and uniform = False
                 self.up_ui_sc_min_y(self.sc_max_y)
 
     def up_sc_max_z(self, context):
@@ -415,18 +720,21 @@ class AT_props(PropertyGroup):
         else:
             test = self.sc_min_z > self.sc_max_z
             if test and self.sc_all:
+                # case : min > max and uniform = True
                 self.up_ui_sc_min_z(self.sc_max_z)
-
+                # with uniform : min_x = min_y = min_z same for max_
                 self.up_ui_sc_max_x(self.sc_max_z)
                 self.up_ui_sc_max_y(self.sc_max_z)
                 self.up_ui_sc_min_x(self.sc_max_z)
                 self.up_ui_sc_min_y(self.sc_max_z)
             elif self.sc_all:
+                # case : min < max and uniform = True
                 self.up_ui_sc_max_x(self.sc_max_z)
                 self.up_ui_sc_max_y(self.sc_max_z)
                 self.up_ui_sc_min_x(self.sc_min_z)
                 self.up_ui_sc_min_y(self.sc_min_z)
             elif test:
+                # case : min > max and uniform = False
                 self.up_ui_sc_min_z(self.sc_max_z)
 
     def up_rot_min(self, context):
@@ -453,6 +761,7 @@ class AT_props(PropertyGroup):
     def up_ui_reset(self):
         """Reset all UI properties"""
         self.up_ui_updateCount(2)
+        self.up_ui_updateRow(1)
         self.up_ui_is_copy()
         self.up_ui_tr_offset(Vector((2.0, 0.0, 0.0)))
         self.up_ui_tr_global(Vector((2.0, 0.0, 0.0)))
@@ -460,8 +769,10 @@ class AT_props(PropertyGroup):
         self.up_ui_sc_global((100, 100, 100))
         self.up_ui_rot_offset(Vector((0.0, 0.0, 0.0)))
         self.up_ui_rot_global(Vector((0.0, 0.0, 0.0)))
+        self.total = "2"
+        self.erow = "2"
 
-    # ------------------------ property list -------------------
+
     count: bpy.props.IntProperty(
         name='Count',
         description="Number of elements, original count as one",
@@ -469,13 +780,44 @@ class AT_props(PropertyGroup):
         soft_min=2,
         update=updateCount
     )
-    # keep the old count to compare later with the current
-    old_count: bpy.props.IntProperty(default=2)
+
+    row: bpy.props.IntProperty(
+        name="Row",
+        description="Number of row(s)",
+        default=1,
+        soft_min=1,
+        soft_max=100,
+        update=update_row
+    )
+
+    """Allow a variation in the row :
+    if row gets n elements, row +1 will get (n + variation) elements
+    only if n + variation > 0
+    """
+    alter: bpy.props.IntProperty(
+        name="Variation",
+        description="Variation in the number of elements in a row. (between -5 and 5)",
+        default=0,
+        soft_min=-5,
+        soft_max=5,
+        update=update_alter
+    )
+
+    total: bpy.props.StringProperty(
+        name="Total",
+        description="Total of elements in array",
+        default="2"
+    )
+
+    erow: bpy.props.StringProperty(
+        description="Number of elements in the current row.",
+        default="2"
+    )
 
     # booleans use to know if user or prog change the value to avoid continuous loop
     is_prog_change: bpy.props.BoolProperty(default=False)  # True if prog change value
 
-    # which one between offset and global user call last, True is offset, False global
+    # which one between offset and global user calls last, True is offset, False global
     is_tr_off_last: bpy.props.BoolProperty(default=True)
 
     # True if addon is initialised
@@ -515,6 +857,17 @@ class AT_props(PropertyGroup):
         update=update_global
     )
 
+    tr_second: bpy.props.FloatVectorProperty(
+        name="Translation",
+        description="Additional offset distance for rows",
+        default=(0.0, 0.0, 0.0),
+        subtype='TRANSLATION',
+        unit='LENGTH',
+        precision=2,
+        step=50,
+        update=update_second
+    )
+
     at_pivot: bpy.props.PointerProperty(
         name='Pivot',
         description="Object you want as pivot point. If none, pivot point is the object's origine",
@@ -545,6 +898,16 @@ class AT_props(PropertyGroup):
         update=update_global
     )
 
+    sc_second: bpy.props.FloatVectorProperty(
+        name='Scale',
+        description="Additionnal scale for rows",
+        default=(100.0, 100.0, 100.0),
+        subtype='XYZ',
+        precision=1,
+        step=100,
+        options={'ANIMATABLE'},
+        update=update_second
+    )
     # rotation vector offset
     rot_offset: bpy.props.FloatVectorProperty(
         name='Offset',
@@ -567,6 +930,17 @@ class AT_props(PropertyGroup):
         step=500,  # = 5
         options={'ANIMATABLE'},
         update=update_global
+    )
+
+    rot_second: bpy.props.FloatVectorProperty(
+        name='Rotation',
+        description="Additionnal rotation for rows",
+        default=(0.0, 0.0, 0.0),
+        subtype='XYZ',
+        unit='ROTATION',
+        step=500,
+        options={'ANIMATABLE'},
+        update=update_second
     )
 
     # ----------------------- random part ----------------------
@@ -682,6 +1056,7 @@ class AT_props(PropertyGroup):
         default=100,
         update=update_rsc
     )
+
     rot_min: bpy.props.FloatVectorProperty(
         name="min",
         description="Minimum random value for rotation",

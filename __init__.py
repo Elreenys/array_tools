@@ -1,3 +1,6 @@
+#EXECUTE
+# -*- coding: utf-8 -*-
+
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -10,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 import bpy
 
 from . import cfg
@@ -21,11 +23,10 @@ bl_info = {
     "author": "Elreenys",
     "description": "Tools to create array of objects",
     "blender": (2, 80, 0),
-    "version": (1, 1, 2),
+    "version": (1, 2, 0),
     "location": "View3D > sidebar > array tools tab",
     "category": "Object"
 }
-
 
 classes = (
     at_operators.OBJECT_OT_at_start,
@@ -40,20 +41,26 @@ classes = (
     at_operators.OBJECT_OT_reset_tr,
     at_operators.OBJECT_OT_reset_sc,
     at_operators.OBJECT_OT_reset_rot,
+    at_operators.OBJECT_OT_reset_second,
+    at_operators.OBJECT_OT_error,
     at_panel.UIPANEL_PT_trans,
+    at_panel.UIPANEL_PT_rows,
     at_panel.UIPANEL_PT_options,
-    at_interface.AT_props
+    at_interface.ArrayTools_props
 )
 
 
 def register():
+    scene = bpy.types.Scene
+    pp = bpy.props.PointerProperty
+
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.at_prop = bpy.props.PointerProperty(type=at_interface.AT_props)
+    scene.arraytools_prop = pp(type=at_interface.ArrayTools_props)
 
 
 def unregister():
-    del bpy.types.Scene.at_prop
+    del bpy.types.Scene.arraytools_prop
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 

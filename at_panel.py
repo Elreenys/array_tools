@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 from bpy.types import Panel
-from mathutils import Vector
 
+from . import cfg
 
 # ---------------------------- Panel ---------------------------
 class UIPANEL_PT_def(Panel):
@@ -20,7 +21,7 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
     def draw(self, context):
         layout = self.layout
         scn = context.scene
-        my_prop = scn.at_prop
+        my_prop = scn.arraytools_prop
 
         row = layout.row()
         row.operator('scene.at_op')
@@ -31,7 +32,6 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
         else:
             row.prop(my_prop, 'is_copy')
             row.prop(my_prop, 'count')
-            row = layout.row()
             box = layout.box()
             box.label(text="Translation")
             col = box.column()
@@ -41,7 +41,6 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
 
             row = layout.row()
             row.prop(my_prop, 'at_pivot')
-            row = layout.row()
 
             box = layout.box()
             box.label(text="Scaling (%)")
@@ -49,7 +48,6 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
             split = col.split()
             split.prop(my_prop, 'sc_offset')
             split.prop(my_prop, 'sc_global')
-            row = layout.row()
 
             box = layout.box()
             if scn.unit_settings.system_rotation == 'DEGREES':
@@ -69,26 +67,81 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
             col = split.column()
             col.prop(my_prop, 'rot_global')
 
-            row = layout.row()
+            box = layout.box()
+            row = box.row()
             row.scale_y = 1.5
             row.operator('scene.at_done')
             row.operator('scene.at_cancel')
 
-            row = layout.row()
+            row = box.row()
             row.scale_y = 0.3
             row.alignment = 'CENTER'
             row.label(text="~ Tansforms are NOT applied ~")
 
 
-class UIPANEL_PT_options(UIPANEL_PT_def):
-    """Panel containing the random options"""
+class UIPANEL_PT_rows(UIPANEL_PT_def):
+    """Panel containing the row options"""
     bl_parent_id = 'UIPANEL_PT_trans'
-    bl_label = 'Options'
+    bl_label = 'Rows options'
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
         layout = self.layout
-        my_prop = context.scene.at_prop
+        my_prop = context.scene.arraytools_prop
+
+        if my_prop.already_start:
+            row = layout.row()
+            row.prop(my_prop, 'count')
+            row.prop(my_prop, 'row')
+            row = layout.row()
+
+            """ Not yet implemented
+            row.scale_y = 0.8
+            row.alignment = 'CENTER'
+            row.prop(my_prop, 'alter')
+            row = layout.row()
+            """
+            row.alignment = 'CENTER'
+            row.scale_x = 1.5
+            row.scale_y = 0.6
+            row.label(text=" - Offset settings -")
+            row.scale_x = 0.8
+            row.operator('scene.at_reset_second')
+
+            layout.use_property_split = True
+
+            col = layout.column()
+            row = col.row(align=True)
+            row.prop(my_prop, 'tr_second')
+            col = layout.column()
+            row = col.row(align=True)
+            row.prop(my_prop, 'sc_second')
+            col = layout.column()
+            row = col.row(align=True)
+            row.prop(my_prop, 'rot_second')
+
+            row = layout.row()
+            row.scale_y = 0.5
+            row.label(text="Total : " + my_prop.total + "    |    current row : " + my_prop.erow)
+            """
+            box = layout.box()
+            box.prop(my_prop, 'tr_second')
+            #row = layout.row()
+            box.prop(my_prop, 'sc_second')
+            #row = layout.row()
+            box.prop(my_prop, 'rot_second')
+            """
+
+
+class UIPANEL_PT_options(UIPANEL_PT_def):
+    """Panel containing the random options"""
+    bl_parent_id = 'UIPANEL_PT_trans'
+    bl_label = 'Random options'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        my_prop = context.scene.arraytools_prop
 
         layout.enabled = my_prop.already_start
         row = layout.row()

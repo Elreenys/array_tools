@@ -1,33 +1,53 @@
+# -*- coding: utf-8 -*-
 import bpy
 
-# global variable stock count, contains only 2 values old count and actual
-at_values = []
-# reference object
-obj_ref = None
-# list of the copies
-list_duplicate = []
-# copies of the matrix_world of elements
-mtx_list = []
+# global variable store count, contains only 2 values old count and actual
+at_count_values = []
+at_row_values = []
+at_alter = [] # not yet used
+# list of the copies / list of lists
+atools_objs = []
+ref_mtx = [] # reference matrix
+col_name = "Array_collection"
 
 
 def init_array_tool(context):
     """Initialisation of the array tools"""
-    prop = context.scene.at_prop
+    global at_count_values
+    global at_row_values
+    global atools_objs
+    global ref_mtx
+    global col_name
+
+    prop = context.scene.arraytools_prop
+    name = col_name
+    i = 1
+    collect = bpy.data.collections.get(col_name)
     # create and link the new collection
-    col_name = "Array_collection"
-    if bpy.data.collections.get(col_name) is None:
+    if collect is None:
         array_col = bpy.data.collections.new(col_name)
         bpy.context.scene.collection.children.link(array_col)
+    else:
+        # if a collection already exist, create a new one
+        while bpy.data.collections.get(name) is not None:
+            name = col_name + str(i)
+            i += 1
+        array_col = bpy.data.collections.new(name)
+        bpy.context.scene.collection.children.link(array_col)
+        col_name = name
 
     if not prop.already_start:
-        global at_values
-        at_values = [1, 2]
-        global obj_ref
+        at_count_values = [1, 2]
+        at_row_values = [0, 1]
+        at_alter = [0, 0]
         active = context.active_object
         prop.already_start = True
+        prop.is_tr_off_last = True
         if active is not None:
-            obj_ref = active
-            prop.add_at_element()
+            atools_objs.append([active.name])
+            ref_mtx = active.matrix_world.copy()
+            del active
+            prop.add_in_column(prop.row)
         # no need anymore
         else:
             print("No object selected")
@@ -35,39 +55,42 @@ def init_array_tool(context):
         print("Already started!")
 
 
-def add_value(value):
-    """Save the actual count"""
-    at_values.append(value)
+def add_count(value):
+    """Save the current count"""
+    global at_count_values
+    at_count_values.append(value)
 
 
-def del_value():
+def del_count():
     """Del the previous count"""
-    del at_values[0]
+    global at_count_values
+    del at_count_values[0]
 
 
-def add_matrix(nb, elems):
-    for i in range(-nb, 0):
-        mtx_list.append(elems[i].matrix_world.copy())
+def add_row(value):
+    """Save the current row"""
+    global at_row_values
+    at_row_values.append(value)
 
 
-def del_matrix(nb):
-    for i in range(nb):
-        mtx_list.pop()
+def del_row():
+    """ Del the previous row value"""
+    global at_row_values
+    del at_row_values[0]
 
 
-def update_matrix(context):
-    count = context.scene.at_prop.count - 1
-    if (len(list_duplicate) == count) and (len(mtx_list) == count):
-        for i in range(count):
-            mtx_list[i] = list_duplicate[i].matrix_world.copy()
-    else:
-        display_miss_error()
-        print("Error : counts aren't not the same !")
+def add_alter(value):
+    """save the current variation"""
+    global at_alter
+    at_alter.append(value)
 
 
-def draw_error(self, context):
-    self.layout.label(text="One or more elements are missing! Continue at your own risks.")
+def del_alter():
+    """Remove previous variation"""
+    del at_alter[0]
 
 
-def display_miss_error():
-    bpy.context.window_manager.popup_menu(draw_error, title="Error", icon='ERROR')
+def display_error(msg):
+    """Call the operator to display an error message"""
+    bpy.ops.info.at_error('INVOKE_DEFAULT', info = msg)
+
