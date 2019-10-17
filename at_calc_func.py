@@ -19,7 +19,7 @@ def at_random_fill(min, max):
 
 
 def at_random(seed, totalc, totalr, mint, maxt, mins, maxs, minr, maxr, btr, bsc, brot, uniform,
-    tr1, tr2, sc1, sc2, r1, r2, pivot):
+    tr1, tr2, sc1, sc2, r1, r2, pivot, varia, valign):
     """Random function for translation, scale and rotation,
         seed : seed for random
         totalc : number of elements in column
@@ -41,13 +41,15 @@ def at_random(seed, totalc, totalr, mint, maxt, mins, maxs, minr, maxr, btr, bsc
         r1 : rotation offset of the column
         r2 : rotation offset of the row
         pivot : pivot
+        varia : variation of rows
+        valign : Vector of align of rows
     """
     random.seed(seed)
     tr, sc, rot = [0, 0, 0], [0, 0, 0], [0, 0, 0]
     xyz_vec = (x_axis(), y_axis(), z_axis())
     ref_name = cfg.atools_objs[0][0]
     for j in range(totalr):
-        for k in range(totalc):
+        for k in range(totalc + j*varia):
             elem_name = cfg.atools_objs[j][k]
             if elem_name == ref_name:
                 continue
@@ -63,7 +65,7 @@ def at_random(seed, totalc, totalr, mint, maxt, mins, maxs, minr, maxr, btr, bsc
             mr = Matrix.Rotation(rot[0], 4, (1, 0, 0)) @ Matrix.Rotation(rot[1], 4, (0, 1, 0)) @ Matrix.Rotation(rot[2], 4, (0, 0, 1))
 
             # recalculate the position...
-            vt, vs, vr = tsr(cfg.ref_mtx, k, j, tr1, tr2, sc1, sc2, Vector(r1), Vector(r2))
+            vt, vs, vr = tsr(cfg.ref_mtx, k, j, tr1, tr2, sc1, sc2, Vector(r1), Vector(r2), valign)
             
             if pivot is not None:
                 emat = at_all_in_one(cfg.ref_mtx, vr, xyz_vec, vt, vs, pivot.location)
@@ -140,7 +142,7 @@ def sum_serie(n, factor):
 
 
 # (T)ranslate (S)cale (R)otation vector
-def tsr(mat, col, row, tcol, trow, scol, srow, rcol, rrow):
+def tsr(mat, col, row, tcol, trow, scol, srow, rcol, rrow, ralign):
     """Retrieve the translation, scale and rotation vector according
     to the position in the array
         mat : matrix of the reference object
@@ -152,8 +154,9 @@ def tsr(mat, col, row, tcol, trow, scol, srow, rcol, rrow):
         srow : scale offset in row
         rcol : rotation offset in column
         rrow : rotation offset in row
+        ralign : row align
     """
-    translate = col * tcol + row * trow 
+    translate = col * tcol + row * trow + row * ralign
     rotate = col * Vector(rcol) + row * Vector(rrow)
     s1 = col * (mat.to_scale() - (scol/100))
     s2 = row * (mat.to_scale() - (srow/100))

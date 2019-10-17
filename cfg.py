@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 import bpy
 
-# global variable store count, contains only 2 values old count and actual
+# count values, contains only 2 values : old count and current
 at_count_values = []
+# row value, contains old row and current
 at_row_values = []
-at_alter = [] # not yet used
+# alter values, contains old and current
+at_alter = []
+# maximun row according to column and alter 
+maxrow = 1
 # list of the copies / list of lists
 atools_objs = []
 ref_mtx = [] # reference matrix
+# collection name
 col_name = "Array_collection"
 
 
@@ -15,6 +20,7 @@ def init_array_tool(context):
     """Initialisation of the array tools"""
     global at_count_values
     global at_row_values
+    global at_alter
     global atools_objs
     global ref_mtx
     global col_name
@@ -87,6 +93,7 @@ def add_alter(value):
 
 def del_alter():
     """Remove previous variation"""
+    global at_alter
     del at_alter[0]
 
 

@@ -3,7 +3,8 @@ Array tools versions
 
 1.0.1   correction with pep8
 
-1.1.0   add random options
+1.1.0   (random options)
+        add random options
         add 19 properties
         add options sub-panel
 
@@ -30,8 +31,9 @@ Array tools versions
         rename class AT_props to class ArrayTools_props
         minor code improvement
 
-1.2.0   add row property (number of row(s))
-        add variation property (variation in each row)
+1.2.0   (rows options)
+        add row property (number of row(s))
+        add alter property (variation in each row)
         add total property (total number of copies)
         add erow property (number of copies in last row)
         atools_objs is now a list of lists (list of rows)
@@ -49,3 +51,10 @@ Array tools versions
         function at_del_all() modified
         functions update_offset() and update_global() modified
         function at_random() and at_all_in_one() modified
+
+1.2.1   (Variation in rows)
+        add maxrow (need with negative variation)
+        add properties align and ralign
+        add functions add_in_col_alter() and del_in_col_alter()
+        modification of several functions
+        correction of the reference matrix which wasn't update anymore since previous version  

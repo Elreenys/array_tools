@@ -3,7 +3,7 @@ from bpy.types import Panel
 
 from . import cfg
 
-# ---------------------------- Panel ---------------------------
+# ---------------------------- Panel --------------------------------
 class UIPANEL_PT_def(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -95,12 +95,11 @@ class UIPANEL_PT_rows(UIPANEL_PT_def):
             row.prop(my_prop, 'row')
             row = layout.row()
 
-            """ Not yet implemented
             row.scale_y = 0.8
-            row.alignment = 'CENTER'
+            row.prop(my_prop, 'align', icon_only=True, expand=True)
             row.prop(my_prop, 'alter')
             row = layout.row()
-            """
+
             row.alignment = 'CENTER'
             row.scale_x = 1.5
             row.scale_y = 0.6

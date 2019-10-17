@@ -40,7 +40,7 @@ def elem_in_row(column, row, indice):
     return elements
 
 
-# ---------------------------- Properties ----------------------
+# ---------------------------- Properties ---------------------------
 class ArrayTools_props(PropertyGroup):
     """Properties for array tools"""
 
@@ -51,13 +51,15 @@ class ArrayTools_props(PropertyGroup):
             nb_column = cfg.at_count_values[1] - column
 
         ref_name = cfg.atools_objs[0][0]
-
         if ref_name in bpy.data.objects:
             ref_obj = bpy.data.objects[ref_name]
+            # update the ref_mtx if object's transforms have changed
+            cfg.ref_mtx = ref_obj.matrix_world.copy()
             # with offset no need to replace all elements, only the last
             if self.is_tr_off_last:
                 for i in range(row):
-                    for j in range(column, column + nb_column):
+                    col = column + i*self.alter
+                    for j in range(col, col + nb_column):
                         objcp = ref_obj.copy()
                         array_col = bpy.data.collections.get(cfg.col_name)
                         array_col.objects.link(objcp)
@@ -74,7 +76,8 @@ class ArrayTools_props(PropertyGroup):
 
             else: # replace all elements
                 for i in range(row):
-                    for j in range(column, column + nb_column):
+                    col = column + i*self.alter
+                    for j in range(col, col + nb_column):
                         objcp = ref_obj.copy()
                         array_col = bpy.data.collections.get(cfg.col_name)
                         array_col.objects.link(objcp)
@@ -84,7 +87,6 @@ class ArrayTools_props(PropertyGroup):
                 self.update_global(bpy.context)
             del objcp
             del ref_obj
-            # print("in add col", cfg.atools_objs)
         else:
             message = "Problem with reference object's name."
             cfg.display_error(message)
@@ -96,7 +98,7 @@ class ArrayTools_props(PropertyGroup):
         if nb_column == -1:
             nb_column = cfg.at_count_values[0] - cfg.at_count_values[1]
         array_col = bpy.data.collections.get(cfg.col_name)
-        for i in range(row):
+        for i in range(row-1, -1, -1):
             for j in range(nb_column):
                 del_name = cfg.atools_objs[i].pop()
                 if del_name in bpy.data.objects:
@@ -106,6 +108,12 @@ class ArrayTools_props(PropertyGroup):
                 else:
                     cfg.display_error(del_name + " doesn't exist anymore.")
                     print("Error in 'del_in_column' : ", del_name)
+
+                # if no more element in list, remove the row
+                if not cfg.atools_objs[i]:
+                    cfg.atools_objs.pop()
+                    self.up_ui_updateRow(row - 1)
+                    continue
         if not self.is_tr_off_last:
             # if global is used last
             self.update_global(bpy.context)
@@ -116,6 +124,63 @@ class ArrayTools_props(PropertyGroup):
             self.up_ui_rot_global(rot)
 
 
+    def add_in_col_alter(self, row, nb_column):
+        """Add elements in all rows except the first for variation"""
+        array_col = bpy.data.collections.get(cfg.col_name)
+        ref_name = cfg.atools_objs[0][0]
+        column = self.count
+        if ref_name in bpy.data.objects:
+            ref_obj = bpy.data.objects[ref_name]
+            cfg.ref_mtx = ref_obj.matrix_world.copy()
+            if self.is_tr_off_last:
+                for i in range(1, row):
+                    for j in range(column, column + i * nb_column):
+                        objcp = ref_obj.copy()
+                        array_col = bpy.data.collections.get(cfg.col_name)
+                        array_col.objects.link(objcp)
+                        if self.is_copy:
+                            objcp.data = ref_obj.data.copy()
+                        cfg.atools_objs[i].append(objcp.name)
+                        # print("objs=", cfg.atools_objs)
+
+                self.update_offset(bpy.context)
+            else: # replace all elements
+                for i in range(1, row):
+                    for j in range(column, column + i * nb_column):
+                        objcp = ref_obj.copy()
+                        array_col = bpy.data.collections.get(cfg.col_name)
+                        array_col.objects.link(objcp)
+                        if self.is_copy:
+                            objcp.data = ref_obj.data.copy()
+                        cfg.atools_objs[i].append(objcp.name)
+                self.update_global(bpy.context)
+            del objcp
+            del ref_obj
+        else:
+            message = "Problem with reference object's name."
+            cfg.display_error(message)
+            print("Error in 'add_in_column' : ", message)
+
+
+    def del_in_col_alter(self, row, nb_column):
+        """Remove elements in all rows except the first"""
+        array_col = bpy.data.collections.get(cfg.col_name)
+        for i in range(row -1 , 0, -1):
+            for j in range(nb_column * i):
+                del_name = cfg.atools_objs[i].pop()
+                # print("del name=", del_name)
+                if del_name in bpy.data.objects:
+                    obj = bpy.data.objects[del_name]
+                    array_col.objects.unlink(obj)
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                else:
+                    cfg.display_error(del_name + " doesn't exist anymore.")
+                    print("Error in 'del_in_column' : ", del_name)
+        if self.is_tr_off_last:
+            self.update_offset(bpy.context)
+        else:
+            self.update_global(bpy.context)
+
     def add_in_row(self, column, nb_row=-1):
         """Add column elements in nb_row new row(s)"""
         row = cfg.at_row_values[0]
@@ -125,10 +190,11 @@ class ArrayTools_props(PropertyGroup):
         ref_name = cfg.atools_objs[0][0]
         if ref_name in bpy.data.objects:
             ref_obj = bpy.data.objects[ref_name]
+            cfg.ref_mtx = ref_obj.matrix_world.copy()
             if self.is_tr_off_last:
                 for i in range(row, row + nb_row):
                     cfg.atools_objs.append([])
-                    for j in range(column):
+                    for j in range(column + i*self.alter):
                         objcp = ref_obj.copy()
                         array_col = bpy.data.collections.get(cfg.col_name)
                         array_col.objects.link(objcp)
@@ -147,7 +213,6 @@ class ArrayTools_props(PropertyGroup):
                             objcp.data = ref_obj.data.copy()
                         cfg.atools_objs[i].append(objcp.name)
                 self.update_global(bpy.context)
-            # print("in add row", cfg.atools_objs)
         else:
             message = "Problem with reference object's name."
             cfg.display_error(message)
@@ -199,11 +264,11 @@ class ArrayTools_props(PropertyGroup):
                 bpy.data.collections.remove(array_col)
         else:
             cfg.atools_objs.append([ref_name])
-        print("Del_all done!")
+        # print("Del_all done!")
 
-    # ----------------------- UI update ----------------------
-    # --------------------------------------------------------
-    # ----------------------- count update -------------------
+    # ----------------------- UI update -----------------------------
+    # ---------------------------------------------------------------
+    # ----------------------- count update --------------------------
     def updateCount(self, context):
         """update the number of element(s) in column"""
         if self.is_prog_change:
@@ -218,10 +283,8 @@ class ArrayTools_props(PropertyGroup):
             self.update_infos()
 
             if difference > 0:
-                # self.add_at_element()
                 self.add_in_column(self.row, difference)
             elif difference < 0:
-                # self.at_del_element()
                 self.del_in_column(self.row, -difference)
         # print("objs =", cfg.atools_objs)
 
@@ -231,14 +294,18 @@ class ArrayTools_props(PropertyGroup):
         self.is_prog_change = True
         self.count = val
 
-    # ----------------------- row update ---------------------
+    # ----------------------- row update ----------------------------
     def update_row(self, context):
         """Update row property"""
+        cfg.add_row(self.row)
+        cfg.del_row()
         if self.is_prog_change:
             self.is_prog_change = False
         else:
-            cfg.add_row(self.row)
-            cfg.del_row()
+            if self.alter < 0 and cfg.maxrow < self.row:
+                cfg.display_error("Maximun rows for these setting is : " + str(cfg.maxrow))
+                self.up_ui_updateRow(cfg.maxrow)
+                return
 
             # cfg.at_row_values[0] always store old row value
             difference = self.row - cfg.at_row_values[0]
@@ -256,36 +323,81 @@ class ArrayTools_props(PropertyGroup):
         self.is_prog_change = True
         self.row = val
 
-    # next release
     def update_alter(self, context):
         """Update alter property"""
         if self.is_prog_change:
             self.is_prog_change = False
         else:
+            # alter must have at least 2 rows
+            if self.row == 1 and self.alter != 0:
+                cfg.display_error("Add more rows first.")
+                self.up_ui_updateAlter(0)
+                return
+            if self.alter < 0:
+                # (column + (row-1)* variation) is the number of elements
+                # of the last row and must be at least >= 1
+                alter = int((1 - self.count) / (self.row - 1))
+                if self.alter < alter:
+                    cfg.display_error("Min variation is '"+str(alter)+"' for these settings.")
+                    self.up_ui_updateAlter(alter)
+                    return
+
             cfg.add_alter(self.alter)
             cfg.del_alter()
+            self.update_ralign()
 
-            print(f"count={self.count}, row={self.row}, alter={self.alter}")
+            difference = self.alter - cfg.at_alter[0]
+            if difference > 0:
+                self.add_in_col_alter(self.row, difference)
+            elif difference < 0:
+                self.del_in_col_alter(self.row, -difference)
+            # print(f"count={self.count}, row={self.row}, alter={self.alter}")
             line = elem_in_row(self.count, self.row, self.alter)
-            print("alter line =", line)
+            # print("elems in row =", line)
 
             self.update_infos()
 
-    # next release
+
     def up_ui_updateAlter(self, val):
         """Update the value of the property alter in UI"""
         self.is_prog_change = True
         self.alter = val
 
 
+    def update_ralign(self):
+        """Update the value of ralign"""
+        decal = -self.alter * self.tr_offset
+        if self.align == 'LEFT':
+            self.ralign = Vector((0.0, 0.0, 0.0))
+        elif self.align == 'CENTER':
+            self.ralign = decal / 2
+        elif self.align == 'RIGHT':
+            self.ralign = decal
+
+
+    def update_align(self, context):
+        """According to the value of align, calculate ralign"""
+        self.update_ralign()
+        
+        if self.is_tr_off_last:
+            self.update_offset(bpy.context)
+        else:
+            self.update_global(bpy.context)
+
+
     def update_infos(self):
         """Update properties total and erow"""
         sum = sum_serie(self.row, self.alter)
         square = self.count * self.row
+        if self.alter >= 0:
+            cfg.maxrow = self.row
+        else:
+            ca = self.count // -self.alter
+            cfg.maxrow = ca if self.count % self.alter == 0 else ca + 1
         self.total = str(int(square + sum))
         self.erow = str(elem_in_row(self.count, self.row, self.alter))
 
-    # ----------------------- translation update --------------
+    # ----------------------- translation update --------------------
     def up_ui_tr_offset(self, val):
         """Update the value of the property tr_offset in UI"""
         self.is_prog_change = True
@@ -296,7 +408,7 @@ class ArrayTools_props(PropertyGroup):
         self.is_prog_change = True
         self.tr_global = val
 
-    # ----------------------- scale update --------------------
+    # ----------------------- scale update --------------------------
     def up_ui_sc_offset(self, val):
         """Update the value of the property sc_offset in UI"""
         self.is_prog_change = True
@@ -307,7 +419,7 @@ class ArrayTools_props(PropertyGroup):
         self.is_prog_change = True
         self.sc_global = val
 
-    # ----------------------- rotation update -----------------
+    # ----------------------- rotation update -----------------------
     def up_ui_rot_offset(self, val):
         """Update the value of the property rot_offset in UI"""
         self.is_prog_change = True
@@ -318,9 +430,9 @@ class ArrayTools_props(PropertyGroup):
         self.is_prog_change = True
         self.rot_global = val
 
-    # -------------------------------------------------------
+    # ---------------------------------------------------------------
     def calc_global(self):
-        """Calculate the column global"""
+        """Calculate global for column"""
         tg = (self.count-1) * self.tr_offset
         sg = (xyz_axis() - (self.count-1) *
             (cfg.ref_mtx.to_scale() - (self.sc_offset/100))) * 100
@@ -338,8 +450,7 @@ class ArrayTools_props(PropertyGroup):
         localxyz = (x_axis(), y_axis(), z_axis())
 
         translate, scaling, rotate = tsr(mat, column, row, self.tr_offset, self.tr_second,
-            self.sc_offset, self.sc_second, self.rot_offset, self.rot_second)
-
+            self.sc_offset, self.sc_second, self.rot_offset, self.rot_second, self.ralign)
         if ename in bpy.data.objects:
             obj = bpy.data.objects[ename]
         if self.at_pivot is not None:
@@ -350,7 +461,7 @@ class ArrayTools_props(PropertyGroup):
                 scaling, mat.translation)
 
 
-    def apply_transforms(self, col_start, col_end, row_start, row_end, tr, sc, rot):
+    def apply_transforms(self, matx, nb_column, nb_row, tr, sc, rot):
         """Move, scale and rotate the selected elements
         tr : translation offset of the first row
         sc : scale offset of the first row
@@ -360,12 +471,11 @@ class ArrayTools_props(PropertyGroup):
         # local axis always (1,0,0) (0,1,0) (0,0,1)
         localxyz = (x_axis(), y_axis(), z_axis())
 
-        ref_scale = cfg.ref_mtx.to_scale()
-
+        ref_scale = matx.to_scale()
         # duplicate code but avoid looping the test
         if self.at_pivot is not None:
-            for i in range(row_start, row_end):
-                for j in range(col_start, col_end):
+            for i in range(nb_row):
+                for j in range(nb_column + i*self.alter):
                     elem = cfg.atools_objs[i][j]
                     if elem in bpy.data.objects:
                         obj = bpy.data.objects[elem]
@@ -373,14 +483,14 @@ class ArrayTools_props(PropertyGroup):
                         cfg.display_error(elem + " no more exist !")
                         print("Error in 'apply_transforms', name no more exist : ", elem)
                         continue
-                    t_off, s_off, r_off = tsr(cfg.ref_mtx, j, i, tr, self.tr_second, sc,
-                        self.sc_second, rot, self.rot_second)
+                    t_off, s_off, r_off = tsr(matx, j, i, tr, self.tr_second, sc,
+                        self.sc_second, rot, self.rot_second, self.ralign)
 
-                    obj.matrix_world = at_all_in_one(cfg.ref_mtx, r_off,
+                    obj.matrix_world = at_all_in_one(matx, r_off,
                         localxyz, t_off, s_off, self.at_pivot.location)
         else:
-            for i in range(row_start, row_end):
-                for j in range(col_start, col_end):
+            for i in range(nb_row):
+                for j in range(nb_column + i*self.alter):
                     ref_loc = cfg.ref_mtx.translation
                     elem = cfg.atools_objs[i][j]
                     if elem in bpy.data.objects:
@@ -389,10 +499,10 @@ class ArrayTools_props(PropertyGroup):
                         cfg.display_error(elem + " no more exist !")
                         print("Error in 'apply_transforms', name no more exist : ", elem)
                         continue
-                    t_off, s_off, r_off = tsr(cfg.ref_mtx, j, i, tr, self.tr_second, sc,
-                        self.sc_second, rot, self.rot_second)
+                    t_off, s_off, r_off = tsr(matx, j, i, tr, self.tr_second, sc,
+                        self.sc_second, rot, self.rot_second, self.ralign)
 
-                    obj.matrix_world = at_all_in_one(cfg.ref_mtx, r_off,
+                    obj.matrix_world = at_all_in_one(matx, r_off,
                         localxyz, t_off, s_off, ref_loc)
         tr_col,sc_col,rot_col = self.calc_global()
         return(tr_col, sc_col, rot_col)
@@ -404,7 +514,10 @@ class ArrayTools_props(PropertyGroup):
         else: # user change offset
             self.is_tr_off_last = True
 
-            aloc, asc, arot = self.apply_transforms(0, self.count, 0, self.row,
+            ref_name = cfg.atools_objs[0][0]
+            if bpy.data.objects[ref_name]:
+                cfg.ref_mtx = bpy.data.objects[ref_name].matrix_world.copy()
+            aloc, asc, arot = self.apply_transforms(cfg.ref_mtx, self.count, self.row,
                 self.tr_offset, self.sc_offset, Vector(self.rot_offset))
 
             # since offset changes, global too
@@ -420,13 +533,16 @@ class ArrayTools_props(PropertyGroup):
         else: # user change global
             self.is_tr_off_last = False
 
+            ref_name = cfg.atools_objs[0][0]
+            if bpy.data.objects[ref_name]:
+                cfg.ref_mtx = bpy.data.objects[ref_name].matrix_world.copy()
             ref_scale = cfg.ref_mtx.to_scale()
 
             translation_offset = Vector(self.tr_global) / (self.count - 1)
             scale_offset = ref_scale - ((ref_scale-(self.sc_global/100)) / (self.count - 1))
             rotation_offset = Vector(self.rot_global) / self.count
 
-            self.apply_transforms(0, self.count, 0, self.row, translation_offset,
+            self.apply_transforms(cfg.ref_mtx, self.count, self.row, translation_offset,
                 Vector(scale_offset)*100, rotation_offset)
 
             # since global changes, offset too
@@ -437,11 +553,14 @@ class ArrayTools_props(PropertyGroup):
 
     def update_second(self, context):
         """Update the secondary transforms"""
-        self.apply_transforms(0, self.count, 0, self.row, self.tr_offset,
+        ref_name = cfg.atools_objs[0][0]
+        if bpy.data.objects[ref_name]:
+            cfg.ref_mtx = bpy.data.objects[ref_name].matrix_world.copy()
+        self.apply_transforms(cfg.ref_mtx, self.count, self.row, self.tr_offset,
             self.sc_offset, self.rot_offset)
 
 
-    # ----------------------- is_copy update ------------------
+    # ----------------------- is_copy update ------------------------
     def up_ui_is_copy(self):
         """Update the value of the property is_copy in UI"""
         self.is_prog_change = True
@@ -478,7 +597,7 @@ class ArrayTools_props(PropertyGroup):
                 for i in range(row):
                     if i != 0:
                         cfg.atools_objs.append([])
-                    for j in range(count):
+                    for j in range(count + i*self.alter):
                         objcp = ref_obj.copy()
                         array_col.objects.link(objcp)
                         cfg.atools_objs[i].append(objcp.name)
@@ -492,8 +611,8 @@ class ArrayTools_props(PropertyGroup):
 
                 print("Rebuild done!")
 
-    # ----------------------- random part -----------------
-    # -----------------------------------------------------
+    # ----------------------- random part ---------------------------
+    # ---------------------------------------------------------------
     def update_seed(self, context):
         if self.at_mode == 'ADV':
             sc_min = (self.sc_min_x, self.sc_min_y, self.sc_min_z)
@@ -501,7 +620,7 @@ class ArrayTools_props(PropertyGroup):
             at_random(self.at_seed, self.count, self.row, self.tr_min, self.tr_max, sc_min,
                 sc_max, self.rot_min, self.rot_max, self.at_is_tr, self.at_is_sc, self.at_is_rot,
                 self.sc_all, self.tr_offset, self.tr_second, self.sc_offset, self.sc_second,
-                self.rot_offset, self.rot_second, self.at_pivot)
+                self.rot_offset, self.rot_second, self.at_pivot, self.alter, self.ralign)
         else: # simple mode
             vec = xyz_axis()
             tr = self.tr_rand * vec
@@ -510,7 +629,7 @@ class ArrayTools_props(PropertyGroup):
             at_random(self.at_seed, self.count, self.row, -tr, tr, sc, 100*vec, -rot, rot,
                 self.at_is_tr, self.at_is_sc, self.at_is_rot, False, self.tr_offset,
                 self.tr_second, self.sc_offset, self.sc_second, self.rot_offset,
-                self.rot_second, self.at_pivot)
+                self.rot_second, self.at_pivot, self.alter, self.ralign)
 
 
     def update_rtr(self, context):
@@ -569,7 +688,7 @@ class ArrayTools_props(PropertyGroup):
         self.is_prog_change = True
         self.sc_max_z = val
 
-    # -------------- update min and max ---------------
+    # -------------- update min and max -----------------------------
     # if user enter a max value < min, change min and vice versa
     def up_tr_min(self, context):
         """Update tr_max if tr_min is higher"""
@@ -757,7 +876,7 @@ class ArrayTools_props(PropertyGroup):
                     self.is_prog_change = True
                     self.rot_min[i] = self.rot_max[i]
 
-    # ----------------------- reset all properties ------------
+    # ----------------------- reset all properties ------------------
     def up_ui_reset(self):
         """Reset all UI properties"""
         self.up_ui_updateCount(2)
@@ -769,6 +888,7 @@ class ArrayTools_props(PropertyGroup):
         self.up_ui_sc_global((100, 100, 100))
         self.up_ui_rot_offset(Vector((0.0, 0.0, 0.0)))
         self.up_ui_rot_global(Vector((0.0, 0.0, 0.0)))
+        self.up_ui_updateAlter(0)
         self.total = "2"
         self.erow = "2"
 
@@ -795,8 +915,9 @@ class ArrayTools_props(PropertyGroup):
     only if n + variation > 0
     """
     alter: bpy.props.IntProperty(
-        name="Variation",
-        description="Variation in the number of elements in a row. (between -5 and 5)",
+        name=" Row variation",
+        description="""Variation in the number of elements in a row. (between -5 and 5).
+            \n Be careful with it""",
         default=0,
         soft_min=-5,
         soft_max=5,
@@ -812,6 +933,26 @@ class ArrayTools_props(PropertyGroup):
     erow: bpy.props.StringProperty(
         description="Number of elements in the current row.",
         default="2"
+    )
+
+    # if alter <> 0, how align the rows
+    align: bpy.props.EnumProperty(
+        name='Align',
+        description="Align of rows when variation is not zero",
+        items=[
+            ('LEFT', 'Left', "Align to the left", 'ALIGN_LEFT', 0),
+            ('CENTER', 'Center', "Align to the center", 'ALIGN_CENTER', 1),
+            ('RIGHT', 'Right', "Align to the right", 'ALIGN_RIGHT', 2)
+        ],
+        default='LEFT',
+        update=update_align
+    )
+
+    # Vector alignment depends on align
+    ralign: bpy.props.FloatVectorProperty(
+        subtype='TRANSLATION',
+        unit='LENGTH',
+        default=(0.0, 0.0, 0.0)
     )
 
     # booleans use to know if user or prog change the value to avoid continuous loop
@@ -943,7 +1084,7 @@ class ArrayTools_props(PropertyGroup):
         update=update_second
     )
 
-    # ----------------------- random part ----------------------
+    # ----------------------- random part ---------------------------
     at_seed: bpy.props.IntProperty(
         name='Seed',
         description="Seed value for random",

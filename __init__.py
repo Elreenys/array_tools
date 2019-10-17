@@ -1,4 +1,3 @@
-#EXECUTE
 # -*- coding: utf-8 -*-
 
 # This program is free software; you can redistribute it and/or modify
@@ -23,7 +22,7 @@ bl_info = {
     "author": "Elreenys",
     "description": "Tools to create array of objects",
     "blender": (2, 80, 0),
-    "version": (1, 2, 0),
+    "version": (1, 2, 1),
     "location": "View3D > sidebar > array tools tab",
     "category": "Object"
 }
