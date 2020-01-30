@@ -5,7 +5,6 @@ Array tools is an addon for Blender 2.80+ to create translation, scale, rotation
 
 
 ## Installation
-With Blender 2.81 release, these steps will no longer be necessary as the addon will be include in Blender.
 
 (remove any previous version)
 
