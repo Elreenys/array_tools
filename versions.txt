@@ -57,4 +57,6 @@ Array tools versions
         add properties align and ralign
         add functions add_in_col_alter() and del_in_col_alter()
         modification of several functions
-        correction of the reference matrix which wasn't update anymore since previous version  
+        correction of the reference matrix which wasn't update anymore since previous version
+        
+1.2.2   the program no longer displays an error message for each copy deleted by the user

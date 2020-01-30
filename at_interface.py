@@ -242,6 +242,7 @@ class ArrayTools_props(PropertyGroup):
         """
         array_col = bpy.data.collections.get(cfg.col_name)
         ref_name = cfg.atools_objs[0][0]
+        ob_del_by_user = []
         for i in range(self.row):
             names = cfg.atools_objs.pop()
             for obj_name in reversed(names):
@@ -250,20 +251,23 @@ class ArrayTools_props(PropertyGroup):
                 # test if object exist
                 if obj_name in bpy.data.objects:
                     obj = bpy.data.objects[obj_name]
-                    array_col.objects.unlink(obj)
+                    if array_col is not None:
+                        array_col.objects.unlink(obj)
                     bpy.data.objects.remove(obj, do_unlink=True)
                 else:
-                    cfg.display_error(obj_name + " not exist!")
-                    print("Error in 'del_all' : ", obj_name)
+                    ob_del_by_user.append(obj_name)
 
         if del_rall:
             cfg.atools_objs.clear()
 
             # removing the collection if empty
-            if not array_col.objects:
+            if array_col is not None and not array_col.objects:
                 bpy.data.collections.remove(array_col)
         else:
             cfg.atools_objs.append([ref_name])
+        
+        if ob_del_by_user:
+            print("One or more objects were already removed : ", ob_del_by_user)
         # print("Del_all done!")
 
     # ----------------------- UI update -----------------------------

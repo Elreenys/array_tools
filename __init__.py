@@ -22,7 +22,7 @@ bl_info = {
     "author": "Elreenys",
     "description": "Tools to create array of objects",
     "blender": (2, 80, 0),
-    "version": (1, 2, 1),
+    "version": (1, 2, 2),
     "location": "View3D > sidebar > array tools tab",
     "category": "Object"
 }
