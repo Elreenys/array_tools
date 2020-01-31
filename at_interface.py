@@ -39,6 +39,9 @@ def elem_in_row(column, row, indice):
     # print("row elements =", elements)
     return elements
 
+def cancel_array():
+    """Call the operator if a problem occur"""
+    bpy.ops.scene.at_cancel()
 
 # ---------------------------- Properties ---------------------------
 class ArrayTools_props(PropertyGroup):
@@ -50,6 +53,7 @@ class ArrayTools_props(PropertyGroup):
         if nb_column == -1:
             nb_column = cfg.at_count_values[1] - column
 
+        array_col = bpy.data.collections.get(cfg.col_name)
         ref_name = cfg.atools_objs[0][0]
         if ref_name in bpy.data.objects:
             ref_obj = bpy.data.objects[ref_name]
@@ -61,8 +65,11 @@ class ArrayTools_props(PropertyGroup):
                     col = column + i*self.alter
                     for j in range(col, col + nb_column):
                         objcp = ref_obj.copy()
-                        array_col = bpy.data.collections.get(cfg.col_name)
-                        array_col.objects.link(objcp)
+                        if array_col is not None:
+                            array_col.objects.link(objcp)
+                        else: # avoid orphan object
+                            bpy.context.scene.collection.objects.link(objcp)
+                        
                         if self.is_copy:
                             objcp.data = ref_obj.data.copy()
                         cfg.atools_objs[i].append(objcp.name)
@@ -79,8 +86,10 @@ class ArrayTools_props(PropertyGroup):
                     col = column + i*self.alter
                     for j in range(col, col + nb_column):
                         objcp = ref_obj.copy()
-                        array_col = bpy.data.collections.get(cfg.col_name)
-                        array_col.objects.link(objcp)
+                        if array_col is not None:
+                            array_col.objects.link(objcp)
+                        else: # avoid orphan object
+                            bpy.context.scene.collection.objects.link(objcp)
                         if self.is_copy:
                             objcp.data = ref_obj.data.copy()
                         cfg.atools_objs[i].append(objcp.name)
@@ -88,9 +97,11 @@ class ArrayTools_props(PropertyGroup):
             del objcp
             del ref_obj
         else:
-            message = "Problem with reference object's name."
-            cfg.display_error(message)
-            print("Error in 'add_in_column' : ", message)
+            message = "(1)Reference obj deleted or renamed."
+            cfg.display_error(message + " Addon will reset.")
+            print("1Error in 'add_in_column' : ", message)
+            cancel_array()
+
 
 
     def del_in_column(self, row, nb_column=-1):
@@ -103,11 +114,12 @@ class ArrayTools_props(PropertyGroup):
                 del_name = cfg.atools_objs[i].pop()
                 if del_name in bpy.data.objects:
                     obj = bpy.data.objects[del_name]
-                    array_col.objects.unlink(obj)
+                    if array_col is not None:
+                        array_col.objects.unlink(obj)
+                    else:
+                        col = obj.users_collection[0]
+                        col.objects.unlink(obj)
                     bpy.data.objects.remove(obj, do_unlink=True)
-                else:
-                    cfg.display_error(del_name + " doesn't exist anymore.")
-                    print("Error in 'del_in_column' : ", del_name)
 
                 # if no more element in list, remove the row
                 if not cfg.atools_objs[i]:
@@ -136,8 +148,10 @@ class ArrayTools_props(PropertyGroup):
                 for i in range(1, row):
                     for j in range(column, column + i * nb_column):
                         objcp = ref_obj.copy()
-                        array_col = bpy.data.collections.get(cfg.col_name)
-                        array_col.objects.link(objcp)
+                        if array_col is not None:
+                            array_col.objects.link(objcp)
+                        else: # avoid orphan object
+                            bpy.context.scene.collection.objects.link(objcp)
                         if self.is_copy:
                             objcp.data = ref_obj.data.copy()
                         cfg.atools_objs[i].append(objcp.name)
@@ -148,7 +162,6 @@ class ArrayTools_props(PropertyGroup):
                 for i in range(1, row):
                     for j in range(column, column + i * nb_column):
                         objcp = ref_obj.copy()
-                        array_col = bpy.data.collections.get(cfg.col_name)
                         array_col.objects.link(objcp)
                         if self.is_copy:
                             objcp.data = ref_obj.data.copy()
@@ -157,9 +170,10 @@ class ArrayTools_props(PropertyGroup):
             del objcp
             del ref_obj
         else:
-            message = "Problem with reference object's name."
-            cfg.display_error(message)
+            message = "(2)Reference object deleted or renamed."
+            cfg.display_error(message + " Addon will be reset.")
             print("Error in 'add_in_column' : ", message)
+            cancel_array()
 
 
     def del_in_col_alter(self, row, nb_column):
@@ -171,11 +185,13 @@ class ArrayTools_props(PropertyGroup):
                 # print("del name=", del_name)
                 if del_name in bpy.data.objects:
                     obj = bpy.data.objects[del_name]
-                    array_col.objects.unlink(obj)
+                    if array_col is not None:
+                        array_col.objects.unlink(obj)
+                    else:
+                        col = obj.users_collection[0]
+                        col.objects.unlink(obj)
                     bpy.data.objects.remove(obj, do_unlink=True)
-                else:
-                    cfg.display_error(del_name + " doesn't exist anymore.")
-                    print("Error in 'del_in_column' : ", del_name)
+
         if self.is_tr_off_last:
             self.update_offset(bpy.context)
         else:
@@ -186,7 +202,8 @@ class ArrayTools_props(PropertyGroup):
         row = cfg.at_row_values[0]
         if nb_row == -1:
             nb_row = cfg.at_row_values[1] - row
-
+    
+        array_col = bpy.data.collections.get(cfg.col_name)
         ref_name = cfg.atools_objs[0][0]
         if ref_name in bpy.data.objects:
             ref_obj = bpy.data.objects[ref_name]
@@ -196,8 +213,10 @@ class ArrayTools_props(PropertyGroup):
                     cfg.atools_objs.append([])
                     for j in range(column + i*self.alter):
                         objcp = ref_obj.copy()
-                        array_col = bpy.data.collections.get(cfg.col_name)
-                        array_col.objects.link(objcp)
+                        if array_col is not None:
+                            array_col.objects.link(objcp)
+                        else: # avoid orphan object
+                            bpy.context.scene.collection.objects.link(objcp)
                         if self.is_copy:
                             objcp.data = ref_obj.data.copy()
                         cfg.atools_objs[i].append(objcp.name)
@@ -207,16 +226,20 @@ class ArrayTools_props(PropertyGroup):
                     cfg.atools_objs.append([])
                     for j in range(column):
                         objcp = ref_obj.copy()
-                        array_col = bpy.data.collections.get(cfg.col_name)
-                        array_col.objects.link(objcp)
+                        if array_col is not None:
+                            array_col.objects.link(objcp)
+                        else: # avoid orphan object
+                            bpy.context.scene.collection.objects.link(objcp)
+                        
                         if self.is_copy:
                             objcp.data = ref_obj.data.copy()
                         cfg.atools_objs[i].append(objcp.name)
                 self.update_global(bpy.context)
         else:
-            message = "Problem with reference object's name."
-            cfg.display_error(message)
+            message = "(3)Reference obj deleted or renamed."
+            cfg.display_error(message + " Addon will reset.")
             print("Error in 'add in row' : ", message)
+            cancel_array()
 
 
     def del_in_row(self, nb_row=-1):
@@ -229,11 +252,12 @@ class ArrayTools_props(PropertyGroup):
             for del_name in names:
                 if del_name in bpy.data.objects:
                     obj = bpy.data.objects[del_name]
-                    array_col.objects.unlink(obj)
+                    if array_col is not None:
+                        array_col.objects.unlink(obj)
+                    else:
+                        col = obj.users_collection[0]
+                        col.objects.unlink(obj)
                     bpy.data.objects.remove(obj, do_unlink=True)
-                else:
-                    cfg.display_error(del_name + " doesn't exist anymore.")
-                    print("Error in 'del_in_column' : ", del_name)
 
 
     def at_del_all(self, del_rall):
@@ -253,6 +277,9 @@ class ArrayTools_props(PropertyGroup):
                     obj = bpy.data.objects[obj_name]
                     if array_col is not None:
                         array_col.objects.unlink(obj)
+                    else:
+                        col = obj.users_collection[0]
+                        col.objects.unlink(obj)
                     bpy.data.objects.remove(obj, do_unlink=True)
                 else:
                     ob_del_by_user.append(obj_name)
@@ -267,7 +294,7 @@ class ArrayTools_props(PropertyGroup):
             cfg.atools_objs.append([ref_name])
         
         if ob_del_by_user:
-            print("One or more objects were already removed : ", ob_del_by_user)
+            print("One or more objects were already removed or renamed : ", ob_del_by_user)
         # print("Del_all done!")
 
     # ----------------------- UI update -----------------------------
@@ -457,12 +484,13 @@ class ArrayTools_props(PropertyGroup):
             self.sc_offset, self.sc_second, self.rot_offset, self.rot_second, self.ralign)
         if ename in bpy.data.objects:
             obj = bpy.data.objects[ename]
-        if self.at_pivot is not None:
-            obj.matrix_world = at_all_in_one(mat, rotate, localxyz, translate,
-                scaling, self.at_pivot.location)
-        else:
-            obj.matrix_world = at_all_in_one(mat, rotate, localxyz, translate,
-                scaling, mat.translation)
+
+            if self.at_pivot is not None:
+                obj.matrix_world = at_all_in_one(mat, rotate, localxyz, translate,
+                    scaling, self.at_pivot.location)
+            else:
+                obj.matrix_world = at_all_in_one(mat, rotate, localxyz, translate,
+                    scaling, mat.translation)
 
 
     def apply_transforms(self, matx, nb_column, nb_row, tr, sc, rot):
@@ -483,15 +511,12 @@ class ArrayTools_props(PropertyGroup):
                     elem = cfg.atools_objs[i][j]
                     if elem in bpy.data.objects:
                         obj = bpy.data.objects[elem]
-                    else:
-                        cfg.display_error(elem + " no more exist !")
-                        print("Error in 'apply_transforms', name no more exist : ", elem)
-                        continue
-                    t_off, s_off, r_off = tsr(matx, j, i, tr, self.tr_second, sc,
-                        self.sc_second, rot, self.rot_second, self.ralign)
 
-                    obj.matrix_world = at_all_in_one(matx, r_off,
-                        localxyz, t_off, s_off, self.at_pivot.location)
+                        t_off, s_off, r_off = tsr(matx, j, i, tr, self.tr_second, sc,
+                            self.sc_second, rot, self.rot_second, self.ralign)
+
+                        obj.matrix_world = at_all_in_one(matx, r_off,
+                            localxyz, t_off, s_off, self.at_pivot.location)
         else:
             for i in range(nb_row):
                 for j in range(nb_column + i*self.alter):
@@ -499,15 +524,12 @@ class ArrayTools_props(PropertyGroup):
                     elem = cfg.atools_objs[i][j]
                     if elem in bpy.data.objects:
                         obj = bpy.data.objects[elem]
-                    else:
-                        cfg.display_error(elem + " no more exist !")
-                        print("Error in 'apply_transforms', name no more exist : ", elem)
-                        continue
-                    t_off, s_off, r_off = tsr(matx, j, i, tr, self.tr_second, sc,
-                        self.sc_second, rot, self.rot_second, self.ralign)
 
-                    obj.matrix_world = at_all_in_one(matx, r_off,
-                        localxyz, t_off, s_off, ref_loc)
+                        t_off, s_off, r_off = tsr(matx, j, i, tr, self.tr_second, sc,
+                            self.sc_second, rot, self.rot_second, self.ralign)
+
+                        obj.matrix_world = at_all_in_one(matx, r_off,
+                            localxyz, t_off, s_off, ref_loc)
         tr_col,sc_col,rot_col = self.calc_global()
         return(tr_col, sc_col, rot_col)
 
@@ -519,8 +541,14 @@ class ArrayTools_props(PropertyGroup):
             self.is_tr_off_last = True
 
             ref_name = cfg.atools_objs[0][0]
-            if bpy.data.objects[ref_name]:
+            if ref_name in bpy.data.objects:
                 cfg.ref_mtx = bpy.data.objects[ref_name].matrix_world.copy()
+            else:
+                cfg.display_error("(4)Reference obj removed or renamed. Addon will reset.")
+                print("Error in 'update_offset', reference object removed or renamed : ", ref_name)
+                cancel_array()
+                return
+
             aloc, asc, arot = self.apply_transforms(cfg.ref_mtx, self.count, self.row,
                 self.tr_offset, self.sc_offset, Vector(self.rot_offset))
 
@@ -538,8 +566,14 @@ class ArrayTools_props(PropertyGroup):
             self.is_tr_off_last = False
 
             ref_name = cfg.atools_objs[0][0]
-            if bpy.data.objects[ref_name]:
+            if ref_name in bpy.data.objects:
                 cfg.ref_mtx = bpy.data.objects[ref_name].matrix_world.copy()
+            else:
+                cfg.display_error("(5)Reference obj removed or renamed. Addon will reset.")
+                print("Error in 'update_global', reference object removed or renamed : ", ref_name)
+                cancel_array()
+                return
+
             ref_scale = cfg.ref_mtx.to_scale()
 
             translation_offset = Vector(self.tr_global) / (self.count - 1)
@@ -558,8 +592,13 @@ class ArrayTools_props(PropertyGroup):
     def update_second(self, context):
         """Update the secondary transforms"""
         ref_name = cfg.atools_objs[0][0]
-        if bpy.data.objects[ref_name]:
+        if ref_name in bpy.data.objects:
             cfg.ref_mtx = bpy.data.objects[ref_name].matrix_world.copy()
+        else:
+            cfg.display_error("(6)Reference obj removed or renamed. Addon will reset.")
+            print("Error in 'update_second', reference object removed or renamed : ", ref_name)
+            cancel_array()
+            return
         self.apply_transforms(cfg.ref_mtx, self.count, self.row, self.tr_offset,
             self.sc_offset, self.rot_offset)
 

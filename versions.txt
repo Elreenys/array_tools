@@ -60,3 +60,5 @@ Array tools versions
         correction of the reference matrix which wasn't update anymore since previous version
         
 1.2.2   the program no longer displays an error message for each copy deleted by the user
+
+1.2.3   correction of errors if user delete one element (reference, copy or collection)

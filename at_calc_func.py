@@ -53,31 +53,32 @@ def at_random(seed, totalc, totalr, mint, maxt, mins, maxs, minr, maxr, btr, bsc
             elem_name = cfg.atools_objs[j][k]
             if elem_name == ref_name:
                 continue
-            elem = bpy.data.objects[elem_name]
-            for i in range(3):
-                tr[i] = random.uniform(mint[i], maxt[i])
-                sc[i] = random.uniform(mins[i]/100, maxs[i]/100)
-                rot[i] = random.uniform(minr[i], maxr[i])
-            if uniform:
-                    sc[0] = sc[1] = sc[2]
-            mt = Matrix.Translation(tr)
-            ms = Matrix.Scale(sc[0], 4, (1, 0, 0)) @ Matrix.Scale(sc[1], 4, (0, 1, 0)) @ Matrix.Scale(sc[2], 4, (0, 0, 1))
-            mr = Matrix.Rotation(rot[0], 4, (1, 0, 0)) @ Matrix.Rotation(rot[1], 4, (0, 1, 0)) @ Matrix.Rotation(rot[2], 4, (0, 0, 1))
+            if elem_name in bpy.data.objects:
+                elem = bpy.data.objects[elem_name]
+                for i in range(3):
+                    tr[i] = random.uniform(mint[i], maxt[i])
+                    sc[i] = random.uniform(mins[i]/100, maxs[i]/100)
+                    rot[i] = random.uniform(minr[i], maxr[i])
+                if uniform:
+                        sc[0] = sc[1] = sc[2]
+                mt = Matrix.Translation(tr)
+                ms = Matrix.Scale(sc[0], 4, (1, 0, 0)) @ Matrix.Scale(sc[1], 4, (0, 1, 0)) @ Matrix.Scale(sc[2], 4, (0, 0, 1))
+                mr = Matrix.Rotation(rot[0], 4, (1, 0, 0)) @ Matrix.Rotation(rot[1], 4, (0, 1, 0)) @ Matrix.Rotation(rot[2], 4, (0, 0, 1))
 
-            # recalculate the position...
-            vt, vs, vr = tsr(cfg.ref_mtx, k, j, tr1, tr2, sc1, sc2, Vector(r1), Vector(r2), valign)
-            
-            if pivot is not None:
-                emat = at_all_in_one(cfg.ref_mtx, vr, xyz_vec, vt, vs, pivot.location)
-            else:
-                emat = at_all_in_one(cfg.ref_mtx, vr, xyz_vec, vt, vs, cfg.ref_mtx.translation)
-            elem.matrix_world = emat
-            if btr:
-                elem.matrix_world @= mt
-            if bsc:
-                elem.matrix_world @= ms
-            if brot:
-                elem.matrix_world @= mr
+                # recalculate the position...
+                vt, vs, vr = tsr(cfg.ref_mtx, k, j, tr1, tr2, sc1, sc2, Vector(r1), Vector(r2), valign)
+                
+                if pivot is not None:
+                    emat = at_all_in_one(cfg.ref_mtx, vr, xyz_vec, vt, vs, pivot.location)
+                else:
+                    emat = at_all_in_one(cfg.ref_mtx, vr, xyz_vec, vt, vs, cfg.ref_mtx.translation)
+                elem.matrix_world = emat
+                if btr:
+                    elem.matrix_world @= mt
+                if bsc:
+                    elem.matrix_world @= ms
+                if brot:
+                    elem.matrix_world @= mr
 
 def x_axis():
     """Get the x axis"""

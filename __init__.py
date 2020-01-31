@@ -21,8 +21,8 @@ bl_info = {
     "name": "Array_tools",
     "author": "Elreenys",
     "description": "Tools to create array of objects",
-    "blender": (2, 80, 0),
-    "version": (1, 2, 2),
+    "blender": (2, 81, 0),
+    "version": (1, 2, 3),
     "location": "View3D > sidebar > array tools tab",
     "category": "Object"
 }

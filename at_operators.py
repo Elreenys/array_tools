@@ -50,6 +50,7 @@ class OBJECT_OT_at_cancel(bpy.types.Operator):
         scn.arraytools_prop.up_ui_reset()
         scn.arraytools_prop.already_start = False
         cfg.col_name = "Array_collection"
+        print("Cancel array done !")
         return {'FINISHED'}
 
 

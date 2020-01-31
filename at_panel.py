@@ -16,7 +16,8 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
 
     @classmethod
     def poll(cls, context):
-        return (len(context.selected_objects) > 0 and (context.object.mode == 'OBJECT'))
+
+        return (context.object is not None and len(context.selected_objects) > 0 and (context.object.mode == 'OBJECT'))
 
     def draw(self, context):
         layout = self.layout
