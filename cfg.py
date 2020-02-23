@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import bpy
+import random
 
 # count values, contains only 2 values : old count and current
 at_count_values = []
@@ -14,7 +15,8 @@ atools_objs = []
 ref_mtx = [] # reference matrix
 # collection name
 col_name = "Array_collection"
-
+# objects to mask
+mask = []
 
 def init_array_tool(context):
     """Initialisation of the array tools"""
@@ -101,3 +103,43 @@ def display_error(msg):
     """Call the operator to display an error message"""
     bpy.ops.info.at_error('INVOKE_DEFAULT', info = msg)
 
+
+def mask_obj(collection, nb_to_mask):
+    """Get a random list of objects to mask"""
+    global mask
+
+    if collection is None:
+        return
+    nb_elems = len(collection.objects)
+    if nb_elems < nb_to_mask:
+        nb_to_mask = nb_elems
+    if collection is not None:
+        reset_mask()
+        mask = random.sample(collection.objects.keys(), nb_to_mask)
+        for name in mask:
+            bpy.data.objects[name].hide_viewport = True
+
+
+def reset_mask():
+    """Unhide masked objects"""
+    global mask
+    if mask:
+        for name in mask:
+            bpy.data.objects[name].hide_viewport = False
+        mask.clear()
+
+
+def del_obj_mask():
+    """Delete masked objects"""
+    global mask
+    global col_name
+
+    collection = bpy.data.collections.get(col_name)
+    if collection is None:
+        return
+    if mask:
+        for name in mask:
+            obj = bpy.data.objects[name]
+            collection.objects.unlink(obj)
+            bpy.data.objects.remove(obj, do_unlink=True)
+        mask.clear()

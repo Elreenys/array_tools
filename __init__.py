@@ -21,8 +21,8 @@ bl_info = {
     "name": "Array_tools",
     "author": "Elreenys",
     "description": "Tools to create array of objects",
-    "blender": (2, 81, 0),
-    "version": (1, 2, 3),
+    "blender": (2, 82, 0),
+    "version": (1, 3, 0),
     "location": "View3D > sidebar > array tools tab",
     "category": "Object"
 }
@@ -42,6 +42,8 @@ classes = (
     at_operators.OBJECT_OT_reset_rot,
     at_operators.OBJECT_OT_reset_second,
     at_operators.OBJECT_OT_error,
+    at_operators.OBJECT_OT_mask,
+    at_operators.OBJECT_OT_reset_mask,
     at_panel.UIPANEL_PT_trans,
     at_panel.UIPANEL_PT_rows,
     at_panel.UIPANEL_PT_options,

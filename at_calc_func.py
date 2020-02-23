@@ -100,6 +100,11 @@ def xyz_axis():
     return Vector((1.0, 1.0, 1.0))
 
 
+def local_axis(obj_mat, axis):
+    """Return the world coordinates of axis from obj space"""
+    return axis @ obj_mat.inverted()
+
+
 def at_all_in_one(ref, angle, vecxyz, vec_tr, vec_sc, pivot):
     """Return the matrix of transformations"""
     # Matrix is composed by location @ rotation @ scale
@@ -163,3 +168,4 @@ def tsr(mat, col, row, tcol, trow, scol, srow, rcol, rrow, ralign):
     s2 = row * (mat.to_scale() - (srow/100))
     scale = xyz_axis() - s1 - s2
     return translate, scale, rotate
+     

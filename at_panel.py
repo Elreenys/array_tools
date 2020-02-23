@@ -51,10 +51,14 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
             split.prop(my_prop, 'sc_global')
 
             box = layout.box()
+            split = box.split(factor=0.6)
             if scn.unit_settings.system_rotation == 'DEGREES':
-                box.label(text="Rotation (degrees)")
+                split.label(text="Rotation (degrees)")
             else:
-                box.label(text="Rotation (radians)")
+                split.label(text="Rotation (radians)")
+            row = split.row()
+            row.prop(my_prop, 'rot_axis', expand=True)
+
             split = box.split(factor=0.08)
 
             col = split.column(align=True)
@@ -122,15 +126,7 @@ class UIPANEL_PT_rows(UIPANEL_PT_def):
 
             row = layout.row()
             row.scale_y = 0.5
-            row.label(text="Total : " + my_prop.total + "    |    current row : " + my_prop.erow)
-            """
-            box = layout.box()
-            box.prop(my_prop, 'tr_second')
-            #row = layout.row()
-            box.prop(my_prop, 'sc_second')
-            #row = layout.row()
-            box.prop(my_prop, 'rot_second')
-            """
+            row.label(text="Total : " + my_prop.total + "    |    current row : " + my_prop.erow)        
 
 
 class UIPANEL_PT_options(UIPANEL_PT_def):
@@ -209,3 +205,13 @@ class UIPANEL_PT_options(UIPANEL_PT_def):
             row.prop(my_prop, 'rot_min')
             row = layout.row()
             row.prop(my_prop, 'rot_max')
+
+        row = layout.row()
+        row.alignment = "CENTER"
+        row.label(text="___________________________")
+        box = layout.box()
+        row = box.row()
+        row.prop(my_prop, 'at_nb_mask')
+        row = box.row()
+        row.operator('scene.at_mask')
+        row.operator('scene.at_reset_mask')

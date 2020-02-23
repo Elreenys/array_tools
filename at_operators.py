@@ -7,8 +7,10 @@ from mathutils import Vector
 
 from . import cfg
 from . import at_interface
-from . at_calc_func import at_random_fill, fill_rotation
-
+from . at_calc_func import(
+    at_random_fill, 
+    fill_rotation
+)
 
 class OBJECT_OT_at_start(bpy.types.Operator):
     """Start and init the addon"""
@@ -30,8 +32,8 @@ class OBJECT_OT_at_done(bpy.types.Operator):
     bl_label = "Done !"
 
     def execute(self, context):
+        cfg.del_obj_mask()
         cfg.atools_objs.clear()
-        #cfg.at_mtx_list.clear()
         array_col = bpy.data.collections.get(cfg.col_name)
         cfg.col_name = "Array_collection"
         context.scene.arraytools_prop.up_ui_reset()
@@ -50,7 +52,8 @@ class OBJECT_OT_at_cancel(bpy.types.Operator):
         scn.arraytools_prop.up_ui_reset()
         scn.arraytools_prop.already_start = False
         cfg.col_name = "Array_collection"
-        print("Cancel array done !")
+        cfg.mask.clear()
+        # print("Cancel array done !")
         return {'FINISHED'}
 
 
@@ -218,3 +221,25 @@ class OBJECT_OT_error(bpy.types.Operator):
         layout = self.layout
         layout.label(text=self.info)
         layout.label(text="")
+
+
+class OBJECT_OT_mask(bpy.types.Operator):
+    """Allow to mask elements"""
+    bl_idname = 'scene.at_mask'
+    bl_label = "Mask"
+
+    def execute(self, context):
+        prop = context.scene.arraytools_prop
+        col = bpy.data.collections.get(cfg.col_name)
+        cfg.mask_obj(col, prop.at_nb_mask)
+        return{'FINISHED'}
+
+
+class OBJECT_OT_reset_mask(bpy.types.Operator):
+    """Reset masked objects"""
+    bl_idname = 'scene.at_reset_mask'
+    bl_label = "Reset mask"
+
+    def execute(self, context):
+        cfg.reset_mask()
+        return{'FINISHED'}

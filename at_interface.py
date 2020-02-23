@@ -13,6 +13,7 @@ from . at_calc_func import(
     y_axis,
     z_axis,
     xyz_axis,
+    local_axis,
     at_all_in_one,
     at_random,
     sum_serie,
@@ -40,7 +41,7 @@ def elem_in_row(column, row, indice):
     return elements
 
 def cancel_array():
-    """Call the operator if a problem occur"""
+    """Call the operator if a problem occurs"""
     bpy.ops.scene.at_cancel()
 
 # ---------------------------- Properties ---------------------------
@@ -478,8 +479,10 @@ class ArrayTools_props(PropertyGroup):
         mat : matrix of the reference object
         ename : element's name to put in place
         """
-        localxyz = (x_axis(), y_axis(), z_axis())
-
+        localxyz = (local_axis(mat, x_axis()), local_axis(mat, y_axis()), local_axis(mat, z_axis()))
+        if self.rot_axis == 'glo':
+            localxyz = (x_axis(), y_axis(), z_axis())
+        
         translate, scaling, rotate = tsr(mat, column, row, self.tr_offset, self.tr_second,
             self.sc_offset, self.sc_second, self.rot_offset, self.rot_second, self.ralign)
         if ename in bpy.data.objects:
@@ -494,15 +497,17 @@ class ArrayTools_props(PropertyGroup):
 
 
     def apply_transforms(self, matx, nb_column, nb_row, tr, sc, rot):
-        """Move, scale and rotate the selected elements
+        """Move, scale and rotate the selected element
         tr : translation offset of the first row
         sc : scale offset of the first row
         rot : rotation offset of the first row
         return global transforms
         """
-        # local axis always (1,0,0) (0,1,0) (0,0,1)
-        localxyz = (x_axis(), y_axis(), z_axis())
+        # local axis always (1,0,0) (0,1,0) (0,0,1) but need in world space
+        localxyz = (local_axis(matx, x_axis()), local_axis(matx, y_axis()), local_axis(matx, z_axis()))
 
+        if self.rot_axis == 'glo':
+            localxyz = (x_axis(), y_axis(), z_axis())
         ref_scale = matx.to_scale()
         # duplicate code but avoid looping the test
         if self.at_pivot is not None:
@@ -653,7 +658,7 @@ class ArrayTools_props(PropertyGroup):
                     self.update_global(bpy.context)
 
                 print("Rebuild done!")
-
+    
     # ----------------------- random part ---------------------------
     # ---------------------------------------------------------------
     def update_seed(self, context):
@@ -998,6 +1003,14 @@ class ArrayTools_props(PropertyGroup):
         default=(0.0, 0.0, 0.0)
     )
 
+    # number of elements to mask
+    at_nb_mask: bpy.props.IntProperty(
+        name="Number to mask",
+        description="Number of elements to mask",
+        soft_min=1,
+        default=1
+    )
+
     # booleans use to know if user or prog change the value to avoid continuous loop
     is_prog_change: bpy.props.BoolProperty(default=False)  # True if prog change value
 
@@ -1091,6 +1104,15 @@ class ArrayTools_props(PropertyGroup):
         step=100,
         options={'ANIMATABLE'},
         update=update_second
+    )
+
+    rot_axis: bpy.props.EnumProperty(
+        name='Axis',
+        description="Rotation orientation",
+        items=(
+            ('loc', 'Local', "Local axes of the reference object"),
+            ('glo', 'Global', "Global axes")),
+        default='loc'
     )
     # rotation vector offset
     rot_offset: bpy.props.FloatVectorProperty(
