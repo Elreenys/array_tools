@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from bpy.types import Panel
+import bpy
+from bpy.types import Panel, AddonPreferences
 
 from . import cfg
 
@@ -33,6 +34,12 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
         else:
             row.prop(my_prop, 'is_copy')
             row.prop(my_prop, 'count')
+            row = layout.row(align=True)
+            row.scale_y = 0.7
+            row.alignment = 'CENTER'
+            row.operator('scene.at_select_all')
+            row.alignment = 'LEFT'
+            row.operator('scene.at_modifiers')
             box = layout.box()
             box.label(text="Translation")
             col = box.column()
@@ -215,3 +222,46 @@ class UIPANEL_PT_options(UIPANEL_PT_def):
         row = box.row()
         row.operator('scene.at_mask')
         row.operator('scene.at_reset_mask')
+
+panels = (UIPANEL_PT_options, UIPANEL_PT_rows, UIPANEL_PT_trans)
+
+# ---------------------------- Preferences --------------------------
+def update_category(self, context):
+    """Update the tab category of the addon"""
+    try:
+        for panel in panels:
+            if "bl_rna" in panel.__dict__:       
+                bpy.utils.unregister_class(panel)
+        prefs = context.preferences.addons[__package__].preferences
+    
+        UIPANEL_PT_def.bl_category = prefs.category
+        for panel in reversed(panels):
+            bpy.utils.register_class(panel)
+        
+    except Exception as e:
+        print("\nError in updating category tab")
+        pass
+
+
+class ArrayToolsPrefs(AddonPreferences):
+    bl_idname = __package__
+
+    category: bpy.props.StringProperty(
+        name="Category",
+        default="Array tools",
+        update=update_category
+    )
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        row.scale_y = 0.2
+        row.alignment = 'CENTER'
+        row.label(text=" ~ Choose the tab name for the addon. ~")
+        row = layout.row()
+        row.alignment = 'CENTER'
+        row.label(text = "Tab name: ")
+        row.alignment = 'LEFT'
+        row.prop(self, 'category', text='')
+

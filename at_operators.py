@@ -243,3 +243,24 @@ class OBJECT_OT_reset_mask(bpy.types.Operator):
     def execute(self, context):
         cfg.reset_mask()
         return{'FINISHED'}
+
+
+class OBJECT_OT_modifiers(bpy.types.Operator):
+    """Update modifiers for all copies"""
+    bl_idname = 'scene.at_modifiers'
+    bl_label = "Update modifier(s)"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        scn = context.scene
+        scn.arraytools_prop.add_del_modifiers()
+        return {'FINISHED'}
+
+class OBJECT_OT_select_all(bpy.types.Operator):
+    """Select copies + reference"""
+    bl_idname = 'scene.at_select_all'
+    bl_label = "Select all"
+
+    def execute(self, context):
+        cfg.select_all()
+        return {'FINISHED'}

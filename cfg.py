@@ -143,3 +143,27 @@ def del_obj_mask():
             collection.objects.unlink(obj)
             bpy.data.objects.remove(obj, do_unlink=True)
         mask.clear()
+
+def select_all():
+    global col_name
+    global atools_objs
+
+    collection = bpy.data.collections.get(col_name)
+    if collection is None:
+        print("No one to select! ")
+        return
+    
+    # unselect all first
+    for objs in bpy.context.selected_objects:
+        objs.select_set(state=False)
+    
+    # select all copies
+    for name in collection.objects.keys():
+        bpy.data.objects[name].select_set(state=True)
+
+    # and select the reference
+    ref_name = atools_objs[0][0]
+    if ref_name in bpy.data.objects:
+        ref = bpy.data.objects[ref_name]
+        ref.select_set(state=True)
+        bpy.context.view_layer.objects.active = ref

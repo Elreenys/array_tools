@@ -103,8 +103,6 @@ class ArrayTools_props(PropertyGroup):
             print("1Error in 'add_in_column' : ", message)
             cancel_array()
 
-
-
     def del_in_column(self, row, nb_column=-1):
         """Remove nb_column element(s) in each row"""
         if nb_column == -1:
@@ -176,7 +174,6 @@ class ArrayTools_props(PropertyGroup):
             print("Error in 'add_in_column' : ", message)
             cancel_array()
 
-
     def del_in_col_alter(self, row, nb_column):
         """Remove elements in all rows except the first"""
         array_col = bpy.data.collections.get(cfg.col_name)
@@ -241,6 +238,7 @@ class ArrayTools_props(PropertyGroup):
             cfg.display_error(message + " Addon will reset.")
             print("Error in 'add in row' : ", message)
             cancel_array()
+        
 
 
     def del_in_row(self, nb_row=-1):
@@ -316,6 +314,7 @@ class ArrayTools_props(PropertyGroup):
 
             if difference > 0:
                 self.add_in_column(self.row, difference)
+                self.update_seed(bpy.context)
             elif difference < 0:
                 self.del_in_column(self.row, -difference)
         # print("objs =", cfg.atools_objs)
@@ -343,6 +342,7 @@ class ArrayTools_props(PropertyGroup):
             difference = self.row - cfg.at_row_values[0]
             if difference > 0:
                 self.add_in_row(self.count, difference)
+                self.update_seed(bpy.context)
             elif difference < 0:
                 self.del_in_row(-difference)
 
@@ -381,6 +381,7 @@ class ArrayTools_props(PropertyGroup):
             difference = self.alter - cfg.at_alter[0]
             if difference > 0:
                 self.add_in_col_alter(self.row, difference)
+                self.update_seed(bpy.context)
             elif difference < 0:
                 self.del_in_col_alter(self.row, -difference)
             # print(f"count={self.count}, row={self.row}, alter={self.alter}")
@@ -561,6 +562,8 @@ class ArrayTools_props(PropertyGroup):
             self.up_ui_tr_global(aloc)
             self.up_ui_sc_global(asc)
             self.up_ui_rot_global(arot)
+            # keep the random
+            self.update_seed(bpy.context)
 
 
     def update_global(self, context):
@@ -592,6 +595,8 @@ class ArrayTools_props(PropertyGroup):
             self.up_ui_tr_offset(translation_offset)
             self.up_ui_sc_offset(Vector(scale_offset*100))
             self.up_ui_rot_offset(rotation_offset)
+            # keep the random
+            self.update_seed(bpy.context)
 
 
     def update_second(self, context):
@@ -607,6 +612,8 @@ class ArrayTools_props(PropertyGroup):
         self.apply_transforms(cfg.ref_mtx, self.count, self.row, self.tr_offset,
             self.sc_offset, self.rot_offset)
 
+        # keep the random
+        self.update_seed(bpy.context)
 
     # ----------------------- is_copy update ------------------------
     def up_ui_is_copy(self):
@@ -658,7 +665,39 @@ class ArrayTools_props(PropertyGroup):
                     self.update_global(bpy.context)
 
                 print("Rebuild done!")
-    
+
+# --------------------------- update modifiers ----------------------
+    def add_del_modifiers(self):
+        """Add or remove modifiers"""
+        ref_name = cfg.atools_objs[0][0]
+        if ref_name in bpy.data.objects:
+            ref = bpy.data.objects.get(ref_name)
+        else:
+            return
+        
+        collection = bpy.data.collections.get(cfg.col_name)
+        if collection is None:
+            return
+        for i in range(self.row):
+            for j in range(self.count + i*self.alter):
+                # no need to select the ref
+                if i == 0 and j == 0:
+                    continue
+                elem = cfg.atools_objs[i][j]
+                if elem in bpy.data.objects:
+                    obj = bpy.data.objects[elem]
+
+                    # remove all modifiers
+                    for m in obj.modifiers:
+                        obj.modifiers.remove(m)
+                    # add modifiers
+                    for m_src in ref.modifiers.values():
+                        m_dest = obj.modifiers.new(name=m_src.name, type=m_src.type)
+                        # and copy attributes
+                        for attr in m_src.bl_rna.properties:
+                            if not attr.is_readonly:
+                                setattr(m_dest, attr.identifier, getattr(m_src, attr.identifier))
+   
     # ----------------------- random part ---------------------------
     # ---------------------------------------------------------------
     def update_seed(self, context):
@@ -946,6 +985,8 @@ class ArrayTools_props(PropertyGroup):
         description="Number of elements, original count as one",
         default=2,
         soft_min=2,
+        min=2,
+        max=2000,
         update=updateCount
     )
 
@@ -954,7 +995,9 @@ class ArrayTools_props(PropertyGroup):
         description="Number of row(s)",
         default=1,
         soft_min=1,
-        soft_max=100,
+        min=1,
+        soft_max=1000,
+        max=1000,
         update=update_row
     )
 
@@ -968,7 +1011,9 @@ class ArrayTools_props(PropertyGroup):
             \n Be careful with it""",
         default=0,
         soft_min=-5,
+        min=-5,
         soft_max=5,
+        max=5,
         update=update_alter
     )
 
@@ -1008,6 +1053,7 @@ class ArrayTools_props(PropertyGroup):
         name="Number to mask",
         description="Number of elements to mask",
         soft_min=1,
+        min=1,
         default=1
     )
 
@@ -1067,14 +1113,14 @@ class ArrayTools_props(PropertyGroup):
 
     at_pivot: bpy.props.PointerProperty(
         name='Pivot',
-        description="Object you want as pivot point. If none, pivot point is the object's origine",
+        description="Object you want as pivot point. If none, pivot point is the object's origin",
         type=bpy.types.Object
     )
 
     # scaling vector offset
     sc_offset: bpy.props.FloatVectorProperty(
         name='Offset',
-        description="Incremental scale of the next elements",
+        description="Incremental scale of next elements",
         default=(100.0, 100.0, 100.0),
         subtype='XYZ',
         precision=1,
@@ -1110,7 +1156,7 @@ class ArrayTools_props(PropertyGroup):
         name='Axis',
         description="Rotation orientation",
         items=(
-            ('loc', 'Local', "Local axes of the reference object"),
+            ('loc', 'Local', "Locals axes of the reference object"),
             ('glo', 'Global', "Global axes")),
         default='loc'
     )

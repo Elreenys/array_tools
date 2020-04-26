@@ -22,9 +22,10 @@ bl_info = {
     "author": "Elreenys",
     "description": "Tools to create array of objects",
     "blender": (2, 82, 0),
-    "version": (1, 3, 0),
+    "version": (1, 3, 1),
     "location": "View3D > sidebar > array tools tab",
-    "category": "Object"
+    "category": "Object",
+    "wiki_url":"https://github.com/Elreenys/array_tools/wiki"
 }
 
 classes = (
@@ -44,10 +45,13 @@ classes = (
     at_operators.OBJECT_OT_error,
     at_operators.OBJECT_OT_mask,
     at_operators.OBJECT_OT_reset_mask,
+    at_operators.OBJECT_OT_modifiers,
+    at_operators.OBJECT_OT_select_all,
     at_panel.UIPANEL_PT_trans,
     at_panel.UIPANEL_PT_rows,
     at_panel.UIPANEL_PT_options,
-    at_interface.ArrayTools_props
+    at_interface.ArrayTools_props,
+    at_panel.ArrayToolsPrefs
 )
 
 
@@ -58,6 +62,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     scene.arraytools_prop = pp(type=at_interface.ArrayTools_props)
+    at_panel.update_category(None, bpy.context)
 
 
 def unregister():

@@ -66,4 +66,10 @@ Array tools versions
 1.3.0   correction of the local rotation
         User can now choose between global or local axis for rotation
         add mask options in random part
+
+1.3.1   objects keep random
+        add an update button to add or remove modifiers in all collection
+        add a button to select copies + reference
+        add min and max properties for count, row and alter to prevent user from writing outside the interval    
+        add user preferences to change the tab name
         
