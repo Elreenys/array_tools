@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# <pep8-80 compliant>
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +15,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 import bpy
 
-from . import cfg
-from . import at_interface
+from . import at_array
+from . import at_icons
+from . import at_properties
 
 bl_info = {
-    "name": "Array_tools",
+    "name": "Array_Tools",
     "author": "Elreenys",
     "description": "Tools to create array of objects",
-    "blender": (2, 82, 0),
-    "version": (1, 3, 1),
-    "location": "View3D > sidebar > array tools tab",
+    "blender": (2, 83, 0),
+    "version": (2, 0, 0),
+    "location": "View3D > sidebar > array bis tab",
     "category": "Object",
-    "wiki_url":"https://github.com/Elreenys/array_tools/wiki"
+    "wiki_url": "https://github.com/Elreenys/array_tools/wiki"
 }
 
 classes = (
@@ -46,12 +48,15 @@ classes = (
     at_operators.OBJECT_OT_mask,
     at_operators.OBJECT_OT_reset_mask,
     at_operators.OBJECT_OT_modifiers,
-    at_operators.OBJECT_OT_select_all,
-    at_panel.UIPANEL_PT_trans,
-    at_panel.UIPANEL_PT_rows,
-    at_panel.UIPANEL_PT_options,
-    at_interface.ArrayTools_props,
-    at_panel.ArrayToolsPrefs
+    at_operators.ANIM_OT_addkey,
+    at_operators.ANIM_OT_delkey,
+    at_operators.ANIM_OT_delallkeys,
+    at_panels.UIPANEL_PT_anim,
+    at_panels.UIPANEL_PT_trans,
+    at_panels.UIPANEL_PT_rows,
+    at_panels.UIPANEL_PT_options,
+    at_properties.ArrayTools_props,
+    at_panels.ArrayToolsPrefs
 )
 
 
@@ -59,13 +64,15 @@ def register():
     scene = bpy.types.Scene
     pp = bpy.props.PointerProperty
 
+    at_icons.register_icons()
     for cls in classes:
         bpy.utils.register_class(cls)
-    scene.arraytools_prop = pp(type=at_interface.ArrayTools_props)
-    at_panel.update_category(None, bpy.context)
+    scene.arraytools_prop = pp(type=at_properties.ArrayTools_props)
+    at_panels.update_category(None, bpy.context)
 
 
 def unregister():
+    at_icons.unregister_icons()
     del bpy.types.Scene.arraytools_prop
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
