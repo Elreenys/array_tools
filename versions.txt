@@ -89,3 +89,5 @@ Array tools versions
         scale use now 2 calculations methods (old one is linear)
         add animation options
         code improvement
+
+2.0.1   correction of 'update modifiers' error

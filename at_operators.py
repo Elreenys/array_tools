@@ -278,7 +278,8 @@ class OBJECT_OT_modifiers(bpy.types.Operator):
 
     def execute(self, context):
         scn = context.scene
-        scn.arraytools_prop.add_del_modifiers()
+        prop = scn.arraytools_prop
+        at_array.add_del_modifiers(prop)
         return {'FINISHED'}
 
 

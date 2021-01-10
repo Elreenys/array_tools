@@ -486,7 +486,7 @@ def add_del_modifiers(self):
     """Add or remove modifiers"""
 
     index = int(self.reference)
-    ref_name = at_array.Larray.bank[0][0][index]
+    ref_name = Larray.bank[0][0][index]
     ref = bpy.data.objects.get(ref_name)
     if ref is None:
         return
@@ -499,7 +499,7 @@ def add_del_modifiers(self):
             # no need to select the ref
             if i == 0 and j == 0:
                 continue
-            elem = at_array.Larray.bank[i][j][index]
+            elem = Larray.bank[i][j][index]
             obj = bpy.data.objects.get(elem)
             if obj is not None:
                 # remove all modifiers

@@ -23,8 +23,8 @@ bl_info = {
     "name": "Array_Tools",
     "author": "Elreenys",
     "description": "Tools to create array of objects",
-    "blender": (2, 83, 0),
-    "version": (2, 0, 0),
+    "blender": (2, 91, 0),
+    "version": (2, 0, 1),
     "location": "View3D > sidebar > array bis tab",
     "category": "Object",
     "wiki_url": "https://github.com/Elreenys/array_tools/wiki"
