@@ -163,7 +163,9 @@ def init_array_tools(context):
                 Larray.bank[0][0].append(elem.name)
                 tmp.append((str(index), elem.name, ''))
 
-            add_column(Larray.bank[0][0], Larray.grp_name, 1, 1, 2, 0)
+            add_column(Larray.bank[0][0], Larray.grp_name, 1, 1, prop.count, 0)
+            if prop.row > 1:
+                add_row(Larray.bank[0][0], Larray.grp_name, 1, prop.row, prop.count, 0)
             Larray.items = list(tmp)
             prop.update_offset(context)
         # no need anymore
@@ -542,3 +544,4 @@ def to_hide(old_row, row, old_col, col, old_alt, alt, is_hide):
                     continue
                 obj.hide_viewport = is_hide
                 obj.hide_render = is_hide
+

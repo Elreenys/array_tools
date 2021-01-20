@@ -91,3 +91,7 @@ Array tools versions
         code improvement
 
 2.0.1   correction of 'update modifiers' error
+
+2.1.0   properties are no longer reset automatically
+        user can add or remove presets
+        correction of bugs

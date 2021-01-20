@@ -15,9 +15,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+
+from bl_ui.utils import PresetPanel
 from bpy.types import Panel, AddonPreferences
 
 from . import at_icons
+from . import at_preset
 
 
 # ---------------------------- Panels -------------------------------
@@ -46,11 +49,20 @@ class UIPANEL_PT_trans(UIPANEL_PT_def):
 
         row = layout.row()
         row.operator('scene.at_op')
-        row = layout.row()
+
         if not my_prop.already_start:
+            row = layout.row()
             row.alignment = 'CENTER'
             row.label(text="~ Click to begin ~")
         else:
+            row = layout.row(align=True)
+            row.operator("scene.at_reset_props", text='', icon='CANCEL')
+            row.menu("AT_MT_preset_menu", text=at_preset.AT_MT_preset_menu.bl_label)
+            row.operator("scene.at_add_preset", text='', icon='ADD')
+            row.operator("scene.at_add_preset", text='', 
+                icon='REMOVE').remove_active = True
+            row = layout.row()
+
             row.prop(my_prop, 'is_copy')
             row.prop(my_prop, 'count')
 
@@ -468,8 +480,23 @@ class UIPANEL_PT_anim(UIPANEL_PT_def):
             row.scale_y = 0.8
             row.prop(my_prop, 'rot_max')
 
+class UIPANEL_PT_user_infos(UIPANEL_PT_def):
+    """Panel containing tips"""
+    bl_parent_id = 'UIPANEL_PT_trans'
+    bl_label = 'Tips'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        
+        row = layout.row()
+        row.label(text="Do you know the Blender Backspace shortcut ?", icon='INFO')
+        row = layout.row()
+        row.label(text="Reset values with it!")
+
 panels = (
-    UIPANEL_PT_options, UIPANEL_PT_rows, UIPANEL_PT_trans, UIPANEL_PT_anim
+    UIPANEL_PT_user_infos, UIPANEL_PT_options, UIPANEL_PT_rows, 
+    UIPANEL_PT_trans, UIPANEL_PT_anim
 )
 
 

@@ -805,6 +805,44 @@ class ArrayTools_props(PropertyGroup):
         self.anim_row = self.update_ui(1)
         self.anim_alter = self.update_ui(0)
 
+    
+    def ui_reset_props(self):
+        """Reset properties"""
+
+        self.count = 2
+        self.row = 1
+        self.tr_offset = self.update_ui((2.0, 0.0, 0.0))
+        self.tr_global = self.update_ui((2.0, 0.0, 0.0))
+        self.tr_second = self.update_ui((0.0, 0.0, 0.0))
+        self.sc_offset = self.update_ui((100.0, 100.0, 100.0))
+        self.sc_global = self.update_ui((100.0, 100.0, 100.0))
+        self.sc_second = self.update_ui((100.0, 100.0, 100.0))
+        self.sc_method = self.update_ui('0')
+        self.at_pivot = self.update_ui(None)
+        self.rot_offset = self.update_ui((0.0, 0.0, 0.0))
+        self.rot_global = self.update_ui((0.0, 0.0, 0.0))
+        self.rot_second = self.update_ui((0.0, 0.0, 0.0))
+        self.rot_axis = self.update_ui('0')
+        self.at_seed = self.update_ui(0)
+        self.at_mode = self.update_ui('SIM')
+        self.at_is_tr = self.update_ui(False)
+        self.at_is_sc = self.update_ui(False)
+        self.at_is_rot = self.update_ui(False)
+        self.tr_min = self.update_ui((0.0, 0.0, 0.0))
+        self.tr_max = self.update_ui((0.0, 0.0, 0.0))
+        self.tr_rand = self.update_ui(0.0)
+        self.sc_all = self.update_ui(False)
+        self.sc_min_x = self.update_ui(100)
+        self.sc_min_y = self.update_ui(100)
+        self.sc_min_z = self.update_ui(100)
+        self.sc_max_x = self.update_ui(100)
+        self.sc_max_y = self.update_ui(100)
+        self.sc_max_z = self.update_ui(100)
+        self.sc_rand = self.update_ui(100)
+        self.rot_min = self.update_ui((0.0, 0.0, 0.0))
+        self.rot_max = self.update_ui((0.0, 0.0, 0.0))
+        self.rot_rand = self.update_ui(0.0)
+
     # --------------------------- Columns ---------------------------
     count: bpy.props.IntProperty(
         name='Count',
@@ -971,7 +1009,7 @@ class ArrayTools_props(PropertyGroup):
     at_pivot: bpy.props.PointerProperty(
         name='Pivot',
         description="Object you want as pivot point. \
-            If none, pivot point is the object's origin",
+        If none, pivot point is the object's origin",
         type=bpy.types.Object
     )
 

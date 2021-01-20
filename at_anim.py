@@ -122,17 +122,21 @@ def del_keyframe(aframe, row, col, alt):
                 if obj is None:
                     continue
                 for data in lsr:
-                    obj.keyframe_delete(data_path=data, frame=aframe)
+                    try:
+                        obj.keyframe_delete(data_path=data, frame=aframe)
+                    except RuntimeError:
+                        aa.display_error('No key to remove !')
+                        break
 
 
 def modify_keyframe(aframe):
     pass
 
-"""
+
 def have_keyframe(aframe, obj):
     if obj.animation_data is not None and obj.animation_data.action is not None:
         for fcurve in obj.animation_data.action.fcurves:
             if aframe in (p.co.x for p in fcurve.keyframe_points):
                 return True
     return False
-"""
+

@@ -18,14 +18,15 @@ import bpy
 from . import at_array
 from . import at_icons
 from . import at_properties
+from . import at_preset
 
 bl_info = {
     "name": "Array_Tools",
     "author": "Elreenys",
     "description": "Tools to create array of objects",
     "blender": (2, 91, 0),
-    "version": (2, 0, 1),
-    "location": "View3D > sidebar > array bis tab",
+    "version": (2, 1, 0),
+    "location": "View3D > sidebar > array tools tab",
     "category": "Object",
     "wiki_url": "https://github.com/Elreenys/array_tools/wiki"
 }
@@ -51,10 +52,16 @@ classes = (
     at_operators.ANIM_OT_addkey,
     at_operators.ANIM_OT_delkey,
     at_operators.ANIM_OT_delallkeys,
+
+    at_operators.OBJECT_OT_reset_properties,
+    at_preset.AT_MT_preset_menu,
+    at_preset.AT_OT_AddPreset,
+
     at_panels.UIPANEL_PT_anim,
     at_panels.UIPANEL_PT_trans,
     at_panels.UIPANEL_PT_rows,
     at_panels.UIPANEL_PT_options,
+    at_panels.UIPANEL_PT_user_infos,
     at_properties.ArrayTools_props,
     at_panels.ArrayToolsPrefs
 )

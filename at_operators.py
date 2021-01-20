@@ -56,7 +56,7 @@ class OBJECT_OT_at_done(bpy.types.Operator):
         at_array.Larray.bank.clear()
         grp = bpy.data.collections.get(at_array.Larray.grp_name)
         at_array.Larray.grp_name = "Array_collection"
-        context.scene.arraytools_prop.up_ui_reset()
+        #context.scene.arraytools_prop.up_ui_reset()
         context.scene.arraytools_prop.already_start = False
         return {'FINISHED'}
 
@@ -79,6 +79,7 @@ class OBJECT_OT_at_cancel(bpy.types.Operator):
         return {'FINISHED'}
 
 
+# ------------------------- Fill --------------------------
 class OBJECT_OT_fill_tr(bpy.types.Operator):
     """Fill random translation fields"""
     bl_idname = 'scene.fill_tr'
@@ -133,7 +134,7 @@ class OBJECT_OT_fill_rot(bpy.types.Operator):
         fill_rotation(context)
         return {'FINISHED'}
 
-
+# ------------------------- quick 360 --------------------------
 class OBJECT_OT_x360(bpy.types.Operator):
     """Quick 360 degrees on X axis"""
     bl_idname = 'scene.x360'
@@ -170,6 +171,7 @@ class OBJECT_OT_z360(bpy.types.Operator):
         return{'FINISHED'}
 
 
+# ------------------------- Reset --------------------------
 class OBJECT_OT_reset_tr(bpy.types.Operator):
     """Reset settings of random translation"""
     bl_idname = 'scene.at_reset_tr'
@@ -220,6 +222,17 @@ class OBJECT_OT_reset_second(bpy.types.Operator):
         prop.tr_second = (0, 0, 0)
         prop.sc_second = (100, 100, 100)
         prop.rot_second = (0, 0, 0)
+        return {'FINISHED'}
+
+
+class OBJECT_OT_reset_properties(bpy.types.Operator):
+    """Reset properties of the ui panel"""
+    bl_idname = 'scene.at_reset_props'
+    bl_label = 'Reset all properties'
+
+    def execute(self, context):
+        prop = context.scene.arraytools_prop
+        prop.ui_reset_props()
         return {'FINISHED'}
 
 
@@ -336,5 +349,8 @@ class ANIM_OT_delallkeys(bpy.types.Operator):
         at_anim.del_all_keyframes(
             context.scene.frame_current, prop.row, prop.count, prop.alter
         )
-        at_anim.Anim.keys.clear()
         return {'FINISHED'}
+
+class OBJECT_OT_save_pref(bpy.types.Operator):
+    """Save the current settings"""
+    
